@@ -4,4 +4,6 @@ bridge between AgOpenGPS an GPS receiver. Works with 2 UBlox to calculate headin
 
 for ESP32
 
+you can use WiFi connection or UBS
+
 should also run on Arduino (untested)
