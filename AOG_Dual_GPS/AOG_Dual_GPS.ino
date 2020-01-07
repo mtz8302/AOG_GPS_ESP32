@@ -28,7 +28,7 @@ struct set {
     byte GPSPosCorrByRoll = 1;  // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     float rollAngleCorrection = 0.0;
 
-    float headingAngleCorrection = 90.0;
+    float headingAngleCorrection = 89.6;
     float AntDist = 68.0;           //cm distance between Antennas
     float AntHight = 225.0;         //cm hight of Antenna
     double virtAntRight = 34.0;   //cm to move virtual Antenna to the right
@@ -70,22 +70,22 @@ bool filterGPSpos = false; //filter GPS Position mostly not necessary
 double rollK, rollPc, rollG, rollXp, rollZp, rollXe;
 double rollP = 1.0;
 double rollVar = 0.1; // variance, smaller: faster, less filtering
-double rollVarProcess = 0.001;// 0.0005;// 0.0003;  smaller: faster, less filtering
+double rollVarProcess = 0.3;// 0.0005;// 0.0003;  smaller: faster, less filtering
 //Kalman filter heading
 double headK, headPc, headG, headXp, headZp, headXe;
 double headP = 1.0;
 double headVar = 0.1; // variance, smaller, more faster filtering
-double headVarProcess = 0.0005;// 0.001;//  smaller: faster, less filtering
+double headVarProcess = 0.1;// 0.001;//  smaller: faster, less filtering
 //Kalman filter lat
 double latK, latPc, latG, latXp, latZp, latXe;
 double latP = 1.0;
 double latVar = 0.1; // variance, smaller, more faster filtering
-double latVarProcess = 0.05;//  smaller: faster, less filtering
+double latVarProcess = 0.5;//  smaller: faster, less filtering
 //Kalman filter lon
 double lonK, lonPc, lonG, lonXp, lonZp, lonXe;
 double lonP = 1.0;
 double lonVar = 0.1; // variance, smaller, more faster filtering
-double lonVarProcess = 0.05;//  smaller: faster, less filtering
+double lonVarProcess = 0.5;//  smaller: faster, less filtering
 
 #if useWiFi
 //WIFI

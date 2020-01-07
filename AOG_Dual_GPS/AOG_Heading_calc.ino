@@ -1,8 +1,5 @@
 void headingRollCalc() {
 
-
-
-
 	rollPresent = false;
 	dualGPSHeadingPresent = false;
 
@@ -78,10 +75,10 @@ void virtualAntennaPoint() {
 			Serial.print("roll°: "); Serial.print(roll, 2); Serial.print(" to right by roll: ");
 			Serial.println(toRight);
 		}
-		toRight = GPSSet.virtAntRight + toRight;
+		toRight = toRight - GPSSet.virtAntRight;
 	}
 	else {
-		toRight = GPSSet.virtAntRight;
+		toRight = 0 - GPSSet.virtAntRight;
 	}
 
 	if (GPSSet.virtAntForew != 0) {
