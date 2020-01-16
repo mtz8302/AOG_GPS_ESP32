@@ -17,22 +17,22 @@ void WiFi_Start_STA() {
   while (WiFi.status() != WL_CONNECTED && millis() < timeout) {
     delay(50);
     Serial.print(".");
- /*   //WIFI LED blink in double time while connecting
+    //WIFI LED blink in double time while connecting
     if (!LED_WIFI_ON) {
         if (millis() > (LED_WIFI_time + (LED_WIFI_pause >> 2))) 
           {
            LED_WIFI_time = millis();
            LED_WIFI_ON = true;
-           digitalWrite(LED_PIN_WIFI, HIGH);
+           digitalWrite(GPSSet.LED_PIN_WIFI, !GPSSet.WIFI_LED_ON);
           }
     }
     if (LED_WIFI_ON) {
       if (millis() > (LED_WIFI_time + (LED_WIFI_pulse >> 2))) {
         LED_WIFI_time = millis();
         LED_WIFI_ON = false;
-        digitalWrite(LED_PIN_WIFI, LOW);
+        digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON);
       }
-    }*/
+    }
   }  //connected or timeout  
   
   Serial.println(""); //NL
@@ -59,7 +59,9 @@ void WiFi_Start_STA() {
       myIP = WiFi.localIP();
       Serial.println(myIP);
       IPToAOG = myIP;
-      IPToAOG[3] = 255;
+      IPToAOG[3] = 255;//set IP to x.x.x.255 according to actual network
+      LED_WIFI_ON = true;
+      digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON);
       my_WiFi_Mode = WIFI_STA;
   }
   else
@@ -67,6 +69,8 @@ void WiFi_Start_STA() {
       WiFi.mode(WIFI_OFF);
       Serial.println("WLAN-Client-Connection failed");
       Serial.println();
+      LED_WIFI_ON = false;
+      digitalWrite(GPSSet.LED_PIN_WIFI, !GPSSet.WIFI_LED_ON);
   }
   delay(20);
 }
@@ -90,12 +94,15 @@ void WiFi_Start_AP() {
   delay(300);
   //server.begin();
   //delay(300);
-  my_WiFi_Mode = WIFI_AP;
+
   //AP_time = millis();
   Serial.print("Accesspoint started - Name : ");
   Serial.println(GPSSet.ssid_ap);
   Serial.print( " IP address: ");
   Serial.println(getmyIP);
+  LED_WIFI_ON = true;
+  digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON);
+  my_WiFi_Mode = WIFI_AP;
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -1,3 +1,88 @@
+//--------------------------------------------------------------
+//  EEPROM Data Handling
+//--------------------------------------------------------------
+#define EEPROM_SIZE 512
+#define EE_ident1 0xED  // Marker Byte 0 + 1
+#define EE_ident2 0xED
+
+
+//--------------------------------------------------------------
+//  Restore EEprom Data
+//--------------------------------------------------------------
+void restoreEEprom() {
+	Serial.println("read values from EEPROM");
+
+	if (EEprom_empty_check() == 1 || EEPROM_clear) { //first start?
+		EEprom_write_all();     //write default data
+	}
+	if (EEprom_empty_check() == 2) { //data available
+		EEprom_read_all();
+	}
+	if (debugmode) { EEprom_show_memory(); }
+}
+
+//--------------------------------------------------------------
+byte EEprom_empty_check() {
+
+	if (!EEPROM.begin(EEPROM_SIZE))
+	{
+		Serial.println("failed to initialise EEPROM"); delay(1000);
+		return false;//0
+	}
+	if (EEPROM.read(0) != EE_ident1 || EEPROM.read(1) != EE_ident2)
+		return true;  // 1 = is empty
+
+	if (EEPROM.read(0) == EE_ident1 && EEPROM.read(1) == EE_ident2)
+		return 2;     // data available
+
+}
+//--------------------------------------------------------------
+void EEprom_write_all() { 
+	if (EEprom_empty_check() || EEPROM_clear) { EEPROM.put(4 + sizeof(GPSSet), GPSSet); Serial.println("rewriting EEPROM"); }//write 2. time with defaults to be able to reload them  
+	EEPROM.write(0, EE_ident1);
+	EEPROM.write(1, EE_ident2);
+	EEPROM.write(2, 0); // reset Restart blocker
+	EEPROM.put(3, GPSSet);
+
+	EEPROM.commit();
+}
+//--------------------------------------------------------------
+void EEprom_read_all() {
+
+	EEPROM.get(3, GPSSet);
+
+}
+//--------------------------------------------------------------
+void EEprom_read_default() {
+	EEPROM.get(4 + sizeof(GPSSet), GPSSet);
+}
+//--------------------------------------------------------------
+void EEprom_show_memory() {
+	byte c2 = 0, data_;
+	Serial.print(EEPROM_SIZE, 1);
+	Serial.println(" bytes read from Flash . Values are:");
+	for (int i = 0; i < EEPROM_SIZE; i++)
+	{
+		data_ = byte(EEPROM.read(i));
+		if (data_ < 0x10) Serial.print("0");
+		Serial.print(data_, HEX);
+		if (c2 == 15) {
+			Serial.print(" ");
+		}
+		else if (c2 >= 31) {
+			Serial.println(); //NL
+			c2 = -1;
+		}
+		else Serial.print(" ");
+		c2++;
+	}
+}
+
+
+
+
+
+
 //parser for 2x UBX PVT (not only RelPosNED)
 
 /*	while (Serial2.available())
@@ -144,7 +229,7 @@ void Serial_Traffic() {
 	byte nextUBXcount1 = 0, nextUBXcount2 = 0;
 
 	//mtz8302 dual GPS: serial 2
-	if (DGPSSett.dualGPS > 0) {
+	if (GPSSet.dualGPS > 0) {
 		nextUBXcount2 = (UBXcount2 + 1) % 25;
 
 		while (Serial2.available())
@@ -303,7 +388,7 @@ void Serial_Traffic() {
 				//if (debugmode) Serial.print(gpsBuffer2[i2]);
 			}
 		}//end serial 2 
-	}//end if (DGPSSett.dualGPS > 0)
+	}//end if (GPSSet.dualGPS > 0)
 
 
   //serial1 = main if only one
@@ -451,20 +536,20 @@ void Serial_Traffic() {
 	/*			if (strcmp(Sent_Buffer1, "GGA") == 0) {
 					for (byte n = 0; n <= i1; n++) {
 						GGABuffer1[n] = gpsBuffer1[n];
-						if (DGPSSett.sendGGAsentence == 2) { lastSentence[n] = gpsBuffer1[n]; }
+						if (GPSSet.sendGGAsentence == 2) { lastSentence[n] = gpsBuffer1[n]; }
 					}
-					if (DGPSSett.sendGGAsentence == 2) { repeat_ser = millis(); } //Reset timer
+					if (GPSSet.sendGGAsentence == 2) { repeat_ser = millis(); } //Reset timer
 					GGATime1 = millis();
-					if (DGPSSett.dualGPS > 0) {
+					if (GPSSet.dualGPS > 0) {
 						delay(1);
 						HeadingCalc(); //heading based on position of 2 Antennas
 						if (GPSHeadingPresent) {
-							//						if ((DGPSSett.filterQuota > 0) && (DGPSSett.filterLastItems > 0)) { filter_movement(); }//!! first call HeadingCalc() !! filters movements and changes GGA
-							if ((DGPSSett.dualGPS == 1) || (DGPSSett.dualGPS == 3)) {
+							//						if ((GPSSet.filterQuota > 0) && (GPSSet.filterLastItems > 0)) { filter_movement(); }//!! first call HeadingCalc() !! filters movements and changes GGA
+							if ((GPSSet.dualGPS == 1) || (GPSSet.dualGPS == 3)) {
 								//							buildHDT();	//!! first call HeadingCalc() !!   builds $GNHDT sentence based on 2 Antenna heading 
 								newHDT = true;
 							}
-							if ((DGPSSett.dualGPS == 5)) {
+							if ((GPSSet.dualGPS == 5)) {
 								//							buildOGI();//call heading calc first!!
 							}
 						}
@@ -475,16 +560,16 @@ void Serial_Traffic() {
 					for (byte n = 0; n <= i1 + 1; n++) {
 						VTGBuffer[n] = gpsBuffer1[n];
 					}
-					if ((GPSHeadingPresent) && ((DGPSSett.dualGPS == 2) || (DGPSSett.dualGPS == 4))) {
+					if ((GPSHeadingPresent) && ((GPSSet.dualGPS == 2) || (GPSSet.dualGPS == 4))) {
 						//					changeVTG();  //!! first call HeadingCalc() !!  puts 2 Antenna heading into existing $GNVTG sentence
 					}
 
 				}
-				switch (DGPSSett.send_UDP_AOG) {
+				switch (GPSSet.send_UDP_AOG) {
 				case 1:
 					//mtz8302
 					if (my_WiFi_Mode != 0) {
-						if (DGPSSett.dualGPS == 5) {
+						if (GPSSet.dualGPS == 5) {
 							//send OGI only if new GGA position came in
 							if (strcmp(Sent_Buffer1, "GGA") == 0) {
 								udpRoof.writeTo(OGIBuffer, OGIlenght, ipDestination, portDestination);
@@ -502,7 +587,7 @@ void Serial_Traffic() {
 					//send also via BT if no Tractor WIFI = AP mode
 #if (useBluetooth)
 					if ((my_WiFi_Mode == WIFI_AP) || (my_WiFi_Mode == 0)) {
-						if (DGPSSett.dualGPS == 5) {
+						if (GPSSet.dualGPS == 5) {
 							if (strcmp(Sent_Buffer1, "GGA") == 0) { //send OGI only if new GGA came in
 								for (byte n = 0; n < OGIlenght; n++) {
 									SerialBT.print((char)OGIBuffer[n]);
@@ -528,7 +613,7 @@ void Serial_Traffic() {
 					break;
 				case 2:
 #if (useBluetooth)
-					if (DGPSSett.dualGPS == 5) {
+					if (GPSSet.dualGPS == 5) {
 						if (strcmp(Sent_Buffer1, "GGA") == 0) {//send OGI only if new GGA came in
 							for (byte n = 0; n < OGIlenght; n++) {
 								SerialBT.print((char)OGIBuffer[n]);

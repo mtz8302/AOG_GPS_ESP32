@@ -4,36 +4,40 @@
 
 //calculates heading, roll and virtual antenna position
 
-//alpha version Matthias Hammer (MTZ8302) 5. Jan 2020
+//by Matthias Hammer (MTZ8302) 16. Jan 2020
 
-//to do: Web interface, Ethernet integration
+//to do: Ethernet integration
 //to think about: will also work with 2 receivers sending GGA, so not only fo UBlox, code is in "MISC"
 
-#define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!!
+
+#define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!! might work on Ardiuno mega not tested
 struct set {
     // IO pins ----------------------------------------------------------------------------------------
-    int8_t RX0 = 3;//USB
-    int8_t TX0 = 1;//USB
+    byte RX0 = 3;//USB change only if not USB!
+    byte TX0 = 1;//USB change only if not USB!
 
-    int8_t RX1 = 27;//6;  //simpleRTK TX(xbee) = RX(f9p)
-    int8_t TX1 = 16;//5; //simpleRTK RX(xbee) = TX(f9p)
+    byte RX1 = 27;//6;  //simpleRTK TX(xbee) = RX(f9p)
+    byte TX1 = 16;//5; //simpleRTK RX(xbee) = TX(f9p)
 
-    int8_t RX2 = 25;//3;  //simpleRTK TX1 2. Antenna
-    int8_t TX2 = 17;//4;  //simpleRTK RX1 2. Antenna
+    byte RX2 = 25;//3;  //simpleRTK TX1 2. Antenna
+    byte TX2 = 17;//4;  //simpleRTK RX1 2. Antenna
 
-    //int8_t LED_PIN_WIFI = 2;//21//32   // WiFi Status LED
+    byte LED_PIN_WIFI = 2;//21//32   // WiFi Status LED 0 = off
+    byte WIFI_LED_ON = HIGH;  //HIGH = LED on high, LOW = LED on low
 
     byte AOGNtrip = 1;  // AOG NTRIP client 0:off 1:on listens to UDP port or USB serial
 
     byte GPSPosCorrByRoll = 1;  // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
-    float rollAngleCorrection = 0.0;
+    double rollAngleCorrection = 0.0;
 
-    float headingAngleCorrection = 89.6;
-    float AntDist = 68.0;           //cm distance between Antennas
-    float AntHight = 225.0;         //cm hight of Antenna
-    double virtAntRight = 34.0;   //cm to move virtual Antenna to the right
+    double headingAngleCorrection = 90;
+    double AntDist = 120.0;// 74.0;           //cm distance between Antennas
+    double AntHight = 228.0;         //cm hight of Antenna
+    double virtAntRight = 37.0;   //cm to move virtual Antenna to the right
     double virtAntForew = 0.0;   //cm to move virtual Antenna foreward
+    double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
 
+    byte DataTransVia = 1;  //transfer data via 0: USB 1: WiFi
 #if useWiFi
     //WiFi---------------------------------------------------------------------------------------------
     //tractors WiFi
@@ -42,9 +46,7 @@ struct set {
 
     const char* ssid_ap = "GPS_unit_ESP_Net";// name of Access point, if no WiFi found
     const char* password_ap = "";
-    //Accessoint is active for time (seconds) 0 = always on, timer resets everytime a client connects
     unsigned long timeoutRouter = 65;//time (s) to search for existing WiFi, than starting Accesspoint 
-    //const int AP_active_time = 600;
 
     //static IP
     byte myIP[4] = { 192, 168, 1, 79 };  // Roofcontrol module 
@@ -63,6 +65,17 @@ bool debugmode = false;
 bool debugmodeUBX = false;
 bool debugmodeHeading = false;
 bool debugmodeVirtAnt = false;
+bool EEPROM_clear = false;
+
+
+// WiFistatus LED 
+// blink times: searching WIFI: blinking 4x faster; connected: blinking as times set; data available: light on; no data for 2 seconds: blinking
+unsigned int LED_WIFI_time = 0;
+unsigned int LED_WIFI_pulse = 700;   //light on in ms 
+unsigned int LED_WIFI_pause = 700;   //light off in ms
+boolean LED_WIFI_ON = false;
+unsigned long Ntrip_data_time = 0;
+
 
 bool filterGPSpos = false; //filter GPS Position mostly not necessary
 
@@ -97,7 +110,7 @@ byte my_WiFi_Mode = 0;  // WIFI_STA = 1 = Workstation  WIFI_AP = 2  = Accesspoin
 //UBX
 byte UBXRingCount1 = 0, UBXDigit1 = 0, UBXDigit2 = 0, OGIfromUBX = 0;
 short UBXLenght1 = 100, UBXLenght2 = 100;
-const unsigned char UBX_HEADER[] = { 0xB5, 0x62 };//all UBX start with this
+constexpr unsigned char UBX_HEADER[] = { 0xB5, 0x62 };//all UBX start with this
 bool isUBXPVT1 = false,  isUBXRelPosNED = false, existsUBXRelPosNED = false;
 
 unsigned long NtripDataTime = 0, now = 0;
@@ -109,12 +122,12 @@ bool newOGI = false;
 byte OGIdigit = 0;
 
 //heading + roll
-const byte GPSHeadingArraySize = 30;
+constexpr byte GPSHeadingArraySize = 3;
 double GPSHeading[GPSHeadingArraySize];
 byte headRingCount = 0;
-const double PI180 = PI / 180;
+constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, virtAntPresent = false, rollPresent = false;
-float roll = 0.0;
+double roll = 0.0;
 byte rollRingCont = 0;
 byte dualAntNoValue = 0, dualAntNoValueMax = 15;// if dual Ant value not valid for xx times, send position without correction/heading/roll
 
@@ -160,7 +173,7 @@ struct NAV_PVT {
     unsigned char CK0;
     unsigned char CK1;
 };
-const byte sizeOfUBXArray = 30;
+constexpr byte sizeOfUBXArray = 3;
 NAV_PVT UBXPVT1[sizeOfUBXArray];
 
 
@@ -196,22 +209,18 @@ NAV_RELPOSNED UBXRelPosNED;
 
 #if useWiFi
 #include <AsyncUDP.h>
-//#include <WiFiUdp.h>
-//#include <WiFiType.h>
 #include <WiFiSTA.h>
 #include <WiFiServer.h>
-//#include <WiFiScan.h>
-//#include <WiFiMulti.h>
-//#include <WiFiGeneric.h>
 #include <WiFiClient.h>
 #include <WiFiAP.h>
 #include <WiFi.h>
-//#include <ETH.h>
-
+#include <EEPROM.h>
 
 //instances----------------------------------------------------------------------------------------
 AsyncUDP udpRoof;
 AsyncUDP udpNtrip;
+WiFiServer server(80);
+WiFiClient client_page;
 #endif
 
 void setup()
@@ -228,6 +237,10 @@ void setup()
     delay(10);
 
     Serial.println();//new line
+
+    if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }
+
+    restoreEEprom();
 
 #if useWiFi
     //start WiFi
@@ -256,6 +269,7 @@ void setup()
         Serial.println(GPSSet.portMy);
     }
     delay(100);
+    server.begin();
 #endif
 }
 
@@ -287,22 +301,34 @@ void loop()
             }
         }
     }
-#if !useWiFi
-    if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1   
-    if (newOGI) {
-        for (byte n = 0; n < (OGIdigit -1); n++)
-        {
-            Serial.write(OGIBuffer[n]);
-        }
-        Serial.println();
-        newOGI = false;    }
-#endif
-#if useWiFi
-    if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
+    //GPS LED: got NTRIP?
 
-    if (newOGI) {
-        udpRoof.writeTo(OGIBuffer, OGIdigit, IPToAOG, GPSSet.portDestination);
-        newOGI = false; 
+
+
+//#if !useWiFi
+    if (GPSSet.DataTransVia == 0) {//use USB
+        if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1   
+        if (newOGI) {
+            for (byte n = 0; n < (OGIdigit - 1); n++)
+            {
+                Serial.write(OGIBuffer[n]);
+            }
+            Serial.println();
+            newOGI = false;
+        }
+    }
+//#endif
+#if useWiFi
+    if (GPSSet.DataTransVia == 1) {//use WiFi
+        if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
+
+        if (newOGI) {
+            udpRoof.writeTo(OGIBuffer, OGIdigit, IPToAOG, GPSSet.portDestination);
+            newOGI = false;
+        }
     }
 #endif
+
+    doWebInterface();
+
 }

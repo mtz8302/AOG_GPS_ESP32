@@ -244,25 +244,25 @@ void buildOGI() {
 	//GPS dual heading
 	if (dualGPSHeadingPresent) {
 		if (debugmode) { Serial.print("GPS Heading to OGI present: "); Serial.println(GPSHeading[headRingCount]); }
-		float tempFlo = GPSHeading[headRingCount];
-		temp = byte(tempFlo/100);
-		tempFlo = tempFlo - temp*100;
+		double tempGPSHead = GPSHeading[headRingCount];
+		temp = byte(tempGPSHead/100);
+		tempGPSHead = tempGPSHead - temp*100;
 		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempFlo / 10);
-		tempFlo = tempFlo - temp * 10;
+		temp = byte(tempGPSHead / 10);
+		tempGPSHead = tempGPSHead - temp * 10;
 		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempFlo);
-		tempFlo = tempFlo - temp;
+		temp = byte(tempGPSHead);
+		tempGPSHead = tempGPSHead - temp;
 		OGIBuffer[OGIdigit++] = temp + 48;
 		OGIBuffer[OGIdigit++] = 0x2E;//.
-		temp = byte(tempFlo*10);
+		temp = byte(tempGPSHead*10);
 		OGIBuffer[OGIdigit++] = temp + 48;
 	}
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//roll
 	if (rollPresent) {
-		float tempRoll = roll;
+		double tempRoll = roll;
 		if (tempRoll < 0) {
 			OGIBuffer[OGIdigit++] = 0x2D;//-
 			tempRoll *= -1;
