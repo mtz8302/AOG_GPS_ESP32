@@ -16,48 +16,52 @@ struct set {
     byte RX0 = 3;//USB change only if not USB!
     byte TX0 = 1;//USB change only if not USB!
 
-    byte RX1 = 27;//6;  //simpleRTK TX(xbee) = RX(f9p)
-    byte TX1 = 16;//5; //simpleRTK RX(xbee) = TX(f9p)
+    byte RX1 = 27;              //simpleRTK TX(xbee) = RX(f9p)
+    byte TX1 = 16;              //simpleRTK RX(xbee) = TX(f9p)
 
-    byte RX2 = 25;//3;  //simpleRTK TX1 2. Antenna
-    byte TX2 = 17;//4;  //simpleRTK RX1 2. Antenna
+    byte RX2 = 25;              //simpleRTK TX1 2. Antenna
+    byte TX2 = 17;              //simpleRTK RX1 2. Antenna
 
-    byte LED_PIN_WIFI = 2;//21//32   // WiFi Status LED 0 = off
-    byte WIFI_LED_ON = HIGH;  //HIGH = LED on high, LOW = LED on low
+    byte LED_PIN_WIFI = 2;      // WiFi Status LED 0 = off
+    byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low
 
-    byte AOGNtrip = 1;  // AOG NTRIP client 0:off 1:on listens to UDP port or USB serial
+    byte AOGNtrip = 1;          // AOG NTRIP client 0:off 1:on listens to UDP port or USB serial
+    byte sendOGI = 1;           //1: send NMEA message 0: off
+    byte sendVTG = 0;           //1: send NMEA message 0: off
+    byte sendGGA = 0;           //1: send NMEA message 0: off
+    byte sendHDT = 0;           //1: send NMEA message 0: off
 
-    byte GPSPosCorrByRoll = 1;  // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
+    byte GPSPosCorrByRoll = 1;      // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     double rollAngleCorrection = 0.0;
 
     double headingAngleCorrection = 90;
-    double AntDist = 120.0;// 74.0;           //cm distance between Antennas
-    double AntHight = 228.0;         //cm hight of Antenna
-    double virtAntRight = 37.0;   //cm to move virtual Antenna to the right
-    double virtAntForew = 0.0;   //cm to move virtual Antenna foreward
+    double AntDist = 74.0;          //cm distance between Antennas
+    double AntHight = 228.0;        //cm hight of Antenna
+    double virtAntRight = 37.0;     //cm to move virtual Antenna to the right
+    double virtAntForew = 0.0;      //cm to move virtual Antenna foreward
     double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
 
-    byte DataTransVia = 1;  //transfer data via 0: USB 1: WiFi
+    byte DataTransVia = 1;          //transfer data via 0: USB 1: WiFi
 #if useWiFi
     //WiFi---------------------------------------------------------------------------------------------
     //tractors WiFi
-    char ssid[24] = "Fendt_209V";    // WiFi network Client name
-    char password[24] =  "";      // WiFi network password//Accesspoint name and password
+    char ssid[24] =  "Fendt_209V";          // WiFi network Client name
+    char password[24] =  "";                // WiFi network password//Accesspoint name and password
 
     const char* ssid_ap = "GPS_unit_ESP_Net";// name of Access point, if no WiFi found
     const char* password_ap = "";
-    unsigned long timeoutRouter = 65;//time (s) to search for existing WiFi, than starting Accesspoint 
+    unsigned long timeoutRouter = 65;       //time (s) to search for existing WiFi, than starting Accesspoint 
 
     //static IP
-    byte myIP[4] = { 192, 168, 1, 79 };  // Roofcontrol module 
-    byte gwIP[4] = { 192, 168, 1, 1 };   // Gateway IP also used if Accesspoint created
+    byte myIP[4] = { 192, 168, 1, 79 };     // Roofcontrol module 
+    byte gwIP[4] = { 192, 168, 1, 1 };      // Gateway IP also used if Accesspoint created
     byte mask[4] = { 255, 255, 255, 0 };
-    byte myDNS[4] = { 8, 8, 8, 8 };      //optional
+    byte myDNS[4] = { 8, 8, 8, 8 };         //optional
 
-    unsigned int portMy = 5544;       //this is port of this module: Autosteer = 5577 IMU = 5566 GPS = 
-    unsigned int portAOG = 8888;      // port to listen for AOG
-    unsigned int AOGNtripPort = 2233; //port NTRIP data from AOG comes in
-    unsigned int portDestination = 9999;  // Port of AOG that listens
+    unsigned int portMy = 5544;             //this is port of this module: Autosteer = 5577 IMU = 5566 GPS = 
+    unsigned int portAOG = 8888;            // port to listen for AOG
+    unsigned int AOGNtripPort = 2233;       //port NTRIP data from AOG comes in
+    unsigned int portDestination = 9999;    // Port of AOG that listens
 #endif
 }; set GPSSet;
 
@@ -117,9 +121,9 @@ unsigned long NtripDataTime = 0, now = 0;
 double virtLat = 0.0, virtLon = 0.0;//virtual Antenna Position
 
 //NMEA
-byte OGIBuffer[90];
-bool newOGI = false; 
-byte OGIdigit = 0;
+byte OGIBuffer[90], HDTBuffer[20], VTGBuffer[50], GGABuffer[80];
+bool newOGI = false, newHDT = false, newGGA = false, newVTG = false;
+byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
 constexpr byte GPSHeadingArraySize = 3;
@@ -240,9 +244,15 @@ void setup()
 
     if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }
 
-    restoreEEprom();
+#if !useWiFi
+    GPSSet.DataTransVia = 0;//set data via USB
+#endif
+    
 
 #if useWiFi
+    restoreEEprom();
+    delay(10);
+
     //start WiFi
     WiFi_Start_STA();
     if (my_WiFi_Mode == 0) {// if failed start AP
@@ -275,60 +285,86 @@ void setup()
 
 void loop()
 {
-    getUBX();//read serials    
+	getUBX();//read serials    
 
-    if (UBXRingCount1 != OGIfromUBX)//new UXB exists
-    {
-        headingRollCalc();
-        if ((dualGPSHeadingPresent) && (rollPresent)) {
-            //virtual Antenna point?
-            if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
-                ((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
-            {//all data there
-                virtualAntennaPoint();
-            }
-            buildOGI();
-            newOGI = true;
-        }
-        else
-        {
-            dualAntNoValue++;//watchdog
-            if (dualAntNoValue > dualAntNoValueMax) {//no new values exist, so send only pos
-                if ((debugmodeHeading)||(debugmodeVirtAnt)) { Serial.println("no dual Antenna values, no heading/roll, watchdog: send only Pos"); }
+	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
+	{
+		headingRollCalc();
+		if ((dualGPSHeadingPresent) && (rollPresent)) {
+			//virtual Antenna point?
+			if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
+				((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
+			{//all data there
+				virtualAntennaPoint();
+			}
+			if (GPSSet.sendGGA) { buildGGA(); }
+			if (GPSSet.sendVTG) { buildVTG(); }
+			if (GPSSet.sendHDT) { buildHDT(); }
+			buildOGI();//should be build anyway, to decide if new data came in
+		}
+		else
+		{
+			dualAntNoValue++;//watchdog
+			if (dualAntNoValue > dualAntNoValueMax) {//no new values exist, so send only pos
+				if ((debugmodeHeading) || (debugmodeVirtAnt)) { Serial.println("no dual Antenna values, no heading/roll, watchdog: send only Pos"); }
+				if (GPSSet.sendGGA) { buildGGA(); }
+				if (GPSSet.sendVTG) { buildVTG(); }
+				if (GPSSet.sendHDT) { buildHDT(); }
+				buildOGI();
+			}
+		}
+	}
+	//GPS LED: got NTRIP?
 
-                buildOGI();
-                newOGI = true;
-            }
-        }
-    }
-    //GPS LED: got NTRIP?
 
 
 
-//#if !useWiFi
-    if (GPSSet.DataTransVia == 0) {//use USB
-        if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1   
-        if (newOGI) {
-            for (byte n = 0; n < (OGIdigit - 1); n++)
-            {
-                Serial.write(OGIBuffer[n]);
-            }
-            Serial.println();
-            newOGI = false;
-        }
-    }
-//#endif
+	if (GPSSet.DataTransVia == 0) {//use USB
+		if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1   
+        if ((newOGI) && (GPSSet.sendOGI == 1)) {
+			for (byte n = 0; n < (OGIdigit - 1); n++) { Serial.write(OGIBuffer[n]); }
+			Serial.println();
+			newOGI = false;
+		}
+		if (newVTG) {
+			for (byte n = 0; n < (VTGdigit - 1); n++) { Serial.write(VTGBuffer[n]); }
+			Serial.println();
+			newVTG = false;
+		}
+		if (newHDT) {
+			for (byte n = 0; n < (HDTdigit - 1); n++) { Serial.write(HDTBuffer[n]); }
+			Serial.println();
+			newHDT = false;
+		}
+		if (newGGA) {
+			for (byte n = 0; n < (GGAdigit - 1); n++) { Serial.write(GGABuffer[n]); }
+			Serial.println();
+			newGGA = false;
+		}
+	}
+
 #if useWiFi
-    if (GPSSet.DataTransVia == 1) {//use WiFi
-        if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
+	if (GPSSet.DataTransVia == 1) {//use WiFi
+		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
-        if (newOGI) {
-            udpRoof.writeTo(OGIBuffer, OGIdigit, IPToAOG, GPSSet.portDestination);
-            newOGI = false;
-        }
-    }
+		if ((newOGI) && (GPSSet.sendOGI == 1)) {
+			udpRoof.writeTo(OGIBuffer, OGIdigit, IPToAOG, GPSSet.portDestination);
+			newOGI = false;
+		}
+		if (newGGA) {
+			udpRoof.writeTo(GGABuffer, GGAdigit, IPToAOG, GPSSet.portDestination);
+			newGGA = false;
+		}
+		if (newVTG) {
+			udpRoof.writeTo(VTGBuffer, VTGdigit, IPToAOG, GPSSet.portDestination);
+			newVTG = false;
+		}
+		if (newHDT) {
+			udpRoof.writeTo(HDTBuffer, HDTdigit, IPToAOG, GPSSet.portDestination);
+			newHDT = false;
+		}
+	}
+	doWebInterface();
 #endif
-
-    doWebInterface();
-
+    
 }

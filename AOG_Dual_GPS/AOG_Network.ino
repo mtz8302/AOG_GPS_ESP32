@@ -51,8 +51,6 @@ void WiFi_Start_STA() {
           Serial.println("STA Failed to configure");
       }
       delay(300);
-//      server.begin();
-//      delay(500);
       Serial.print("WiFi Client successfully connected to : ");
       Serial.println(GPSSet.ssid);
       Serial.print("Connected IP - Address : ");

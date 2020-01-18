@@ -1,3 +1,5 @@
+#if useWiFi
+
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
 char HTML_String[20000];
@@ -10,6 +12,7 @@ int Aufruf_Zaehler = 0;
 #define ACTION_SET_SSID        1  
 #define ACTION_SET_OUTPUT_TYPE 2  // also adress at EEPROM
 #define ACTION_SET_loadDefault 3
+#define ACTION_SET_Msg          4
 #define ACTION_SET_AOGNTRIP    12
 #define ACTION_SET_RESTART     13
 #define ACTION_SET_GPIO        14
@@ -162,9 +165,7 @@ void process_Request()
 
     if (action == ACTION_SET_loadDefault) {
         EEprom_read_default();
-        delay(100);
-        delay(100);
-        EEprom_write_all();
+        delay(5);
     }
     // WiFi access data
     if (action == ACTION_SET_SSID) {
@@ -321,6 +322,27 @@ void process_Request()
             delay(500);
         }
         exhibit("AOG NTRIP client  : ", GPSSet.AOGNtrip);
+        EEprom_write_all();
+    }
+    if (action == ACTION_SET_Msg) {
+        bool noMsg = true;
+        //int temp = Pick_Parameter_Zahl("AOGNTRIP=", HTML_String);
+        if (Pick_Parameter_Zahl("seOGI=", HTML_String) == 1) { GPSSet.sendOGI = 1; noMsg = false; }
+            else { GPSSet.sendOGI = 0; }
+        if (Pick_Parameter_Zahl("seGGA=", HTML_String) == 1) { GPSSet.sendGGA = 1; noMsg = false; }
+        else { GPSSet.sendGGA = 0; }
+        if (Pick_Parameter_Zahl("seVTG=", HTML_String) == 1) { GPSSet.sendVTG = 1; noMsg = false; }
+        else { GPSSet.sendVTG = 0; }
+        if (Pick_Parameter_Zahl("seHDT=", HTML_String) == 1) { GPSSet.sendHDT = 1; noMsg = false; }
+        else { GPSSet.sendHDT = 0; }
+        if (noMsg) { GPSSet.sendOGI = 1; }
+        if (debugmode) {
+            Serial.println();
+            Serial.print("Set PAOGI to "); Serial.println(GPSSet.sendOGI);
+            Serial.println();
+            delay(500);
+        }
+
         EEprom_write_all();
     }
     if (action == ACTION_SET_DataTransfVia) {
@@ -545,7 +567,7 @@ void make_HTML01() {
     strcat(HTML_String, "more settings like IPs, UPD ports... in setup zone of INO code<br>");
     strcat(HTML_String, "(Rev. 3.0 by MTZ8302 Webinterface by WEDER)<br><hr>");
 
-/*
+
     //---------------------------------------------------------------------------------------------  
     //load values of INO setup zone
     strcat(HTML_String, "<h2>Load default values of INO setup zone</h2>");
@@ -562,7 +584,7 @@ void make_HTML01() {
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
     strcat(HTML_String, "<br><hr>");
-*/
+
     //-----------------------------------------------------------------------------------------
     // WiFi Client Access Datastrcat( HTML_String, "<hr><h2>WiFi Network Client Access Data</h2>");
     strcat(HTML_String, "<form>");
@@ -761,6 +783,55 @@ void make_HTML01() {
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
     strcat(HTML_String, "<br><hr>");
+
+
+
+    //---------------------------------------------------------------------------------------------
+    // Checkboxes AHRS
+    strcat(HTML_String, "<h2>Messages to send</h2>");
+    strcat(HTML_String, "<form>");
+    strcat(HTML_String, "<table>");
+    set_colgroup(150, 270, 150, 0, 0);
+
+	strcat(HTML_String, "<tr>");
+	strcat(HTML_String, "<td></td><td><input type=\"checkbox\" name=\"seOGI\" id = \"Part\" value = \"1\" ");
+	if (GPSSet.sendOGI == 1) strcat(HTML_String, "checked ");
+	strcat(HTML_String, "> ");
+	strcat(HTML_String, "<label for =\"Part\"> send PAOGI</label>");
+	strcat(HTML_String, "</td>");    
+    strcat(HTML_String, "<td><button style= \"width:120px\" name=\"ACTION\" value=\"");
+    strcati(HTML_String, ACTION_SET_Msg);
+    strcat(HTML_String, "\">Apply and Save</button></td>");
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type=\"checkbox\" name=\"seGGA\" id = \"Part\" value = \"1\" ");
+    if (GPSSet.sendGGA == 1) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "> ");
+    strcat(HTML_String, "<label for =\"Part\"> send GPGGA</label>");
+    strcat(HTML_String, "</td></tr>");
+    strcat(HTML_String, "<tr>");
+
+    strcat(HTML_String, "<td></td><td><input type=\"checkbox\" name=\"seVTG\" id = \"Part\" value = \"1\" ");
+    if (GPSSet.sendVTG == 1) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "> ");
+    strcat(HTML_String, "<label for =\"Part\"> send GPVTG</label>");
+    strcat(HTML_String, "</td></tr>");
+    strcat(HTML_String, "<tr>");
+
+    strcat(HTML_String, "<td></td><td><input type=\"checkbox\" name=\"seHDT\" id = \"Part\" value = \"1\" ");
+    if (GPSSet.sendHDT == 1) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "> ");
+    strcat(HTML_String, "<label for =\"Part\"> send GPHDT</label>");
+    strcat(HTML_String, "</td></tr>");
+
+
+    strcat(HTML_String, "</tr>");
+
+    strcat(HTML_String, "</table>");
+    strcat(HTML_String, "</form>");
+    strcat(HTML_String, "<br><hr>");
+
+
     //---------------------------------------------------------------------------------------------  
     // NTRIP from AOG 
     strcat(HTML_String, "<h2>NTRIP from AOG</h2>");
@@ -1126,3 +1197,5 @@ void make_HTML01() {
        Serial.print(tx);
        Serial.print(v);
      }
+
+#endif
