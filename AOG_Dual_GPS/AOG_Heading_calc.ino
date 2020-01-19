@@ -2,6 +2,7 @@ void headingRollCalc() {
 
 	rollPresent = false;
 	dualGPSHeadingPresent = false;
+	filterGPSpos = false;
 
 	if (existsUBXRelPosNED) {
 		//check if all values are vaild
@@ -45,11 +46,17 @@ void headingRollCalc() {
 							roll = (atan2((double(UBXRelPosNED.relPosD) + (double(UBXRelPosNED.relPosHPD) / 100)), GPSSet.AntDist)) / PI180;
 						}
 						else //else: set roll 0 and filter, so if only one value missing no jump
-						{
+						{//start filter GPS pos, set Kalman values
+							if (GPSSet.filterGPSposOnWeakSignal == 1) { 
+								filterGPSpos = true; 
+								latVarProcess = posVarProcessFast;
+								lonVarProcess = posVarProcessFast;
+							}
 							roll = 0.0;
-							Serial.println("poor quality of GPS signal: NO roll calc, heading calc OK");
-							Serial.print("Antenna distance set: "); Serial.print(GPSSet.AntDist); Serial.print("  Ant. dist from GPS: "); Serial.println(UBXRelPosNED.relPosLength);
-
+							if (debugmode) {
+								Serial.println("poor quality of GPS signal: NO roll calc, heading calc OK");
+								Serial.print("Antenna distance set: "); Serial.print(GPSSet.AntDist); Serial.print("  Ant. dist from GPS: "); Serial.println(UBXRelPosNED.relPosLength);
+							}
 						}
 						roll -= GPSSet.rollAngleCorrection;
 						if (debugmodeHeading) { Serial.print("roll calc: "); Serial.print(roll); }
@@ -74,10 +81,15 @@ void headingRollCalc() {
 					}
 					else
 					{
-						if (debugmode) { Serial.print("no roll calc: antennas not left and right. headingCorrectionAngle: "); Serial.println(GPSSet.headingAngleCorrection); }
+						if (debugmode||debugmodeHeading) { Serial.print("no roll calc: antennas not left and right. headingCorrectionAngle: "); Serial.println(GPSSet.headingAngleCorrection); }
 					}
 				}
 				else {
+					if (GPSSet.filterGPSposOnWeakSignal == 1) {
+						filterGPSpos = true;
+						latVarProcess = posVarProcessSlow;
+						lonVarProcess = posVarProcessSlow;
+					}
 					Serial.println("poor quality of GPS signal: NO heading/roll calc");
 					Serial.print("Antenna distance set: "); Serial.print(GPSSet.AntDist); Serial.print("  Ant. dist from GPS: "); Serial.println(UBXRelPosNED.relPosLength);
 				}

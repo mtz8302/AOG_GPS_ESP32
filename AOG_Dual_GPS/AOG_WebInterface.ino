@@ -258,7 +258,7 @@ void process_Request()
             if (tempfl < 10) { tempfl = (tempfl * 0.1) + 1; }//ex: 1,3 not 1,03
             else { tempfl = (tempfl * 0.01) + 1; }
             GPSSet.AntDistDeviationFactor = tempfl;
-            EEprom_write_all();
+
             if (debugmode) {
                 Serial.println();
                 Serial.print("AntDisDevFact "); Serial.println(tempfl);
@@ -266,6 +266,9 @@ void process_Request()
                 delay(500);
             }
         }
+        if (Pick_Parameter_Zahl("GPSPosFilter=", HTML_String) == 0) GPSSet.filterGPSposOnWeakSignal = 0;
+        if (Pick_Parameter_Zahl("GPSPosFilter=", HTML_String) == 1) GPSSet.filterGPSposOnWeakSignal = 1;
+        EEprom_write_all();
     }
     if (action == ACTION_SET_HeadAngCorr) {
         float tempfl = Pick_Parameter_Zahl("HeadAngleCorr=", HTML_String); //get interger value
@@ -758,7 +761,7 @@ void make_HTML01() {
     strcat(HTML_String, "<br><hr>");
 
     //---------------------------------------------------------------------------------------------  
-    // heading calc antenna dist deviation
+    // heading calc antenna dist deviation + filter postion
     strcat(HTML_String, "<h2>Max deviation for heading/roll calculation</h2>");
     strcat(HTML_String, "If GPS signal is weak, heading and roll calc is wrong.<br>");
     strcat(HTML_String, "To check this the antanna distance messured by GPS is compared with antenna distance from setup.<br>");
@@ -779,6 +782,19 @@ void make_HTML01() {
     strcati(HTML_String, ACTION_SET_AntDistDevFact);
     strcat(HTML_String, "\">Apply and Save</button></td>");
     strcat(HTML_String, "</tr>");
+    strcat(HTML_String, "</table>");
+    strcat(HTML_String, "<br>filter GPS position on weak signal</b><br>");
+    strcat(HTML_String, "<table>");
+    set_colgroup(150, 270, 150, 0, 0);
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"GPSPosFilter\" id=\"JZ\" value=\"0\"");
+    if (GPSSet.filterGPSposOnWeakSignal == 0)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">OFF</label></td>");;
+    strcat(HTML_String, "</tr>");
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"GPSPosFilter\" id=\"JZ\" value=\"1\"");
+    if (GPSSet.filterGPSposOnWeakSignal == 1)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">ON (default)</label></td></tr>");
 
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
@@ -786,8 +802,9 @@ void make_HTML01() {
 
 
 
+
     //---------------------------------------------------------------------------------------------
-    // Checkboxes AHRS
+    // Checkboxes Messages
     strcat(HTML_String, "<h2>Messages to send</h2>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");

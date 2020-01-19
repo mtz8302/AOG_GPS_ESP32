@@ -64,13 +64,17 @@ From RMC or VTG:
 (13) 022.4 Speed over the ground in knots
 (14) 084.4 Track angle in degrees True
 
-//remark MTZ8302: in AOG heading is only parsed once?? so one word is less in AOG!
 FROM IMU:
 (15) XXX.xx IMU Heading in degrees True
-(16) XXX.xx Roll angle in degrees (What is a positive roll, left leaning - left down, right up?)
+(16) XXX.xx Roll angle in degrees (positive roll = right leaning - right down, left up)
 (17) XXX.xx Pitch angle in degrees (Positive pitch = nose up)
 (18) XXX.xx Yaw Rate in Degrees / second
-(19) T/F IMU status - Valid IMU Fusion
+
+(19) GPS roll/heading quality:
+	0 = no roll/heading=no corrected pos 
+	1 = heading OK, no roll 
+	2 = OK, corrected position
+
 
 *CHKSUM
 */
@@ -281,14 +285,15 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 	//angualr velocity
 	OGIBuffer[OGIdigit++] = 0x2C;//,
-	//IMU valid?
-/*	if (GPSHeadingPresent) {
-		OGIBuffer[OGIdigit++] = 0x54;//T
+//roll/heading valid?
+	if (rollPresent) {
+		OGIBuffer[OGIdigit++] = 50;//2
 	}
 	else {
-		OGIBuffer[OGIdigit++] = 0x46;//F 
+		if (dualGPSHeadingPresent) { OGIBuffer[OGIdigit++] = 49; }//1
+		  else {OGIBuffer[OGIdigit++] = 48;}//0
 	}
-*/
+
 	OGIBuffer[OGIdigit++] = 0x2A;//*
 
 	//checksum
