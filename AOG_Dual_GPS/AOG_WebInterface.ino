@@ -472,69 +472,69 @@ void process_Request()
 
         if (Pick_Parameter_Zahl("TX2=", HTML_String) == 2) {
             GPSSet.TX2 = 2;
-            Serial1.end();
+            Serial2.end();
             delay(20);
-            Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2);
+            Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2);
             delay(5);
             EEprom_write_all();
         }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 3) { GPSSet.TX2 = 3; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 4) { GPSSet.TX2 = 4; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 5) { GPSSet.TX2 = 5; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 13) { GPSSet.TX2 = 13; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 14) { GPSSet.TX2 = 14; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 15) { GPSSet.TX2 = 15; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 16) { GPSSet.TX2 = 16; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 17) { GPSSet.TX2 = 17; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 18) { GPSSet.TX2 = 18; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 19) { GPSSet.TX2 = 19; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 20) { GPSSet.TX2 = 20; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 21) { GPSSet.TX2 = 21; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 22) { GPSSet.TX2 = 22; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 23) { GPSSet.TX2 = 23; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 24) { GPSSet.TX2 = 24; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 25) { GPSSet.TX2 = 25; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 26) { GPSSet.TX2 = 26; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 27) { GPSSet.TX2 = 27; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 28) { GPSSet.TX2 = 28; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 29) { GPSSet.TX2 = 29; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 30) { GPSSet.TX2 = 30; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 31) { GPSSet.TX2 = 31; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 32) { GPSSet.TX2 = 32; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 33) { GPSSet.TX2 = 33; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 3) { GPSSet.TX2 = 3; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 4) { GPSSet.TX2 = 4; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 5) { GPSSet.TX2 = 5; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 13) { GPSSet.TX2 = 13; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 14) { GPSSet.TX2 = 14; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 15) { GPSSet.TX2 = 15; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 16) { GPSSet.TX2 = 16; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 17) { GPSSet.TX2 = 17; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 18) { GPSSet.TX2 = 18; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 19) { GPSSet.TX2 = 19; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 20) { GPSSet.TX2 = 20; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 21) { GPSSet.TX2 = 21; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 22) { GPSSet.TX2 = 22; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 23) { GPSSet.TX2 = 23; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 24) { GPSSet.TX2 = 24; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 25) { GPSSet.TX2 = 25; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 26) { GPSSet.TX2 = 26; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 27) { GPSSet.TX2 = 27; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 28) { GPSSet.TX2 = 28; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 29) { GPSSet.TX2 = 29; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 30) { GPSSet.TX2 = 30; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 31) { GPSSet.TX2 = 31; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 32) { GPSSet.TX2 = 32; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("TX2=", HTML_String) == 33) { GPSSet.TX2 = 33; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
 
         if (Pick_Parameter_Zahl("RX2=", HTML_String) == 2) {
             GPSSet.RX2 = 2;
-            Serial1.end();
+            Serial2.end();
             delay(20);
-            Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2);
+            Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2);
             delay(5);
             EEprom_write_all();
         }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 3) { GPSSet.RX2 = 3; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 4) { GPSSet.RX2 = 4; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 5) { GPSSet.RX2 = 5; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 13) { GPSSet.RX2 = 13; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 14) { GPSSet.RX2 = 14; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 15) { GPSSet.RX2 = 15; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 16) { GPSSet.RX2 = 16; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 17) { GPSSet.RX2 = 17; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 18) { GPSSet.RX2 = 18; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 19) { GPSSet.RX2 = 19; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 20) { GPSSet.RX2 = 20; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 21) { GPSSet.RX2 = 21; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 22) { GPSSet.RX2 = 22; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 23) { GPSSet.RX2 = 23; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 24) { GPSSet.RX2 = 24; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 25) { GPSSet.RX2 = 25; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 26) { GPSSet.RX2 = 26; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 27) { GPSSet.RX2 = 27; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 28) { GPSSet.RX2 = 28; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 29) { GPSSet.RX2 = 29; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 30) { GPSSet.RX2 = 30; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 31) { GPSSet.RX2 = 31; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 32) { GPSSet.RX2 = 32; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 33) { GPSSet.RX2 = 33; Serial1.end(); delay(20); Serial1.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 3) { GPSSet.RX2 = 3; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 4) { GPSSet.RX2 = 4; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 5) { GPSSet.RX2 = 5; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 13) { GPSSet.RX2 = 13; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 14) { GPSSet.RX2 = 14; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 15) { GPSSet.RX2 = 15; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 16) { GPSSet.RX2 = 16; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 17) { GPSSet.RX2 = 17; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 18) { GPSSet.RX2 = 18; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 19) { GPSSet.RX2 = 19; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 20) { GPSSet.RX2 = 20; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 21) { GPSSet.RX2 = 21; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 22) { GPSSet.RX2 = 22; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 23) { GPSSet.RX2 = 23; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 24) { GPSSet.RX2 = 24; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 25) { GPSSet.RX2 = 25; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 26) { GPSSet.RX2 = 26; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 27) { GPSSet.RX2 = 27; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 28) { GPSSet.RX2 = 28; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 29) { GPSSet.RX2 = 29; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 30) { GPSSet.RX2 = 30; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 31) { GPSSet.RX2 = 31; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 32) { GPSSet.RX2 = 32; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("RX2=", HTML_String) == 33) { GPSSet.RX2 = 33; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
 
     }
 
