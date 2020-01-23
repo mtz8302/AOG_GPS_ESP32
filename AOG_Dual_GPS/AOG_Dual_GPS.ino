@@ -23,7 +23,7 @@ struct set {
     //  TX1---------RX1--------------------------------RTCM in         (NTRIP comming from AOG to get absolute/correct postion
     //  RX2-------------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
     //  TX2-------------------------------RX1----------
-    //              TX2-------------------RX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in both F9P!! = NTRIP for relative positioning)
+    //              RX2-------------------TX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in both F9P!! = NTRIP for relative positioning)
 
     byte RX1 = 27;              //1. F9P TX1 GPS pos
     byte TX1 = 16;              //1. F9P RX1 GPS pos
