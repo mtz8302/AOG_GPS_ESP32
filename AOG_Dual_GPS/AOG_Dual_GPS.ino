@@ -3,11 +3,12 @@
 //AOG sending NTRIP via UDP to port 2233(or USB) -> ESP sends it to UBLOX via UART
 
 //calculates heading, roll and virtual antenna position
+//filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
 
 //by Matthias Hammer (MTZ8302) 16. Jan 2020
 
 //to do: Ethernet integration
-//to think about: will also work with 2 receivers sending GGA, so not only fo UBlox, code is in "MISC"
+//to think about: will also work with 2 receivers sending GGA, so not only fo UBlox, code is in "EEPROM"
 
 
 #define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!! might work on Ardiuno mega not tested
@@ -40,15 +41,15 @@ struct set {
     double virtAntRight = 37.0;     //cm to move virtual Antenna to the right
     double virtAntForew = 0.0;      //cm to move virtual Antenna foreward
 
-    double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
+    double AntDistDeviationFactor = 1.15; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
     
     byte DataTransVia = 1;          //transfer data via 0: USB 1: WiFi
 #if useWiFi
     //WiFi---------------------------------------------------------------------------------------------
     //tractors WiFi
-    char ssid[24] = "Fendt_209V";          // WiFi network Client name
-    char password[24] =  "";                // WiFi network password//Accesspoint name and password
+    char ssid[24] = "Fendt_209V";           // WiFi network Client name
+    char password[24] = "";                 // WiFi network password//Accesspoint name and password
 
     const char* ssid_ap = "GPS_unit_ESP_Net";// name of Access point, if no WiFi found
     const char* password_ap = "";
@@ -89,25 +90,28 @@ unsigned long Ntrip_data_time = 0;
 double rollK, rollPc, rollG, rollXp, rollZp, rollXe;
 double rollP = 1.0;
 double rollVar = 0.1; // variance, smaller: faster, less filtering
-double rollVarProcess = 0.3;// 0.0005;// 0.0003;  bigger: faster, less filtering
+double rollVarProcess = 0.3;// 0.0005;// 0.0003;  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
 //Kalman filter heading
 double headK, headPc, headG, headXp, headZp, headXe;
 double headP = 1.0;
 double headVar = 0.1; // variance, smaller, more faster filtering
-double headVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering
+double headVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
 //Kalman filter lat
 double latK, latPc, latG, latXp, latZp, latXe;
 double latP = 1.0;
 double latVar = 0.1; // variance, smaller, more faster filtering
-double latVarProcess = 0.5;//  replaced by fast/slow depending on GPS qaulity
+double latVarProcess = 0.3;//  replaced by fast/slow depending on GPS qaulity
 //Kalman filter lon
 double lonK, lonPc, lonG, lonXp, lonZp, lonXe;
 double lonP = 1.0;
 double lonVar = 0.1; // variance, smaller, more faster filtering
-double lonVarProcess = 0.5;// replaced by fast/slow depending on GPS quality
+double lonVarProcess = 0.3;// replaced by fast/slow depending on GPS quality
 
-double posVarProcessFast = 0.4;//  used, when GPS signal is weak, no roll, but heading OK
-double posVarProcessSlow = 0.2;//  used, when GPS signal is very weak, no roll no heading
+double VarProcessVeryFast = 0.6;//  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessMedi = 0.2;//  used, when GPS signal is  weak, no roll no heading
+double VarProcessSlow = 0.1;//  used, when GPS signal is  weak, no roll no heading
+double VarProcessVerySlow = 0.05;//  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
 #if useWiFi

@@ -8,50 +8,37 @@ void headingRollCalc() {
 		//check if all values are vaild
 		if (bitRead(UBXRelPosNED.flags, 0)) {//gnssFixOK?
 			if (bitRead(UBXRelPosNED.flags, 2)) {//1 if relative position components and moving baseline are valid
-				//check if vector lenght between antennas is in range = indicator of heading/roll quality
+			//RelPosNED OK: heading + roll calc												 
 				if ((UBXRelPosNED.relPosLength > (GPSSet.AntDist / GPSSet.AntDistDeviationFactor)) && (UBXRelPosNED.relPosLength < (GPSSet.AntDist * GPSSet.AntDistDeviationFactor))) {
-
-					//RelPosNED OK: heading + roll calc	
+				//check if vector lenght between antennas is in range = indicator of heading/roll quality
+					
+					//signal perfect
+					headVarProcess = VarProcessMedi; //set Kalman filter
 					dualAntNoValue = 0;//reset watchdog
-			//heading
-					headRingCount = (headRingCount + 1) % GPSHeadingArraySize;
-					GPSHeading[headRingCount] = double(UBXRelPosNED.relPosHeading) * 0.00001;
-					GPSHeading[headRingCount] = GPSHeading[headRingCount] + GPSSet.headingAngleCorrection;
-					if (GPSHeading[headRingCount] >= 360) { GPSHeading[headRingCount] -= 360; }
-					if (GPSHeading[headRingCount] < 0) { GPSHeading[headRingCount] += 360; }
 
-					if (debugmodeHeading) { Serial.print("heading calc: "); Serial.print(GPSHeading[headRingCount]); }
-					//Kalman filter heading
-					//input to the kalman filter
-					headK = GPSHeading[headRingCount];
-
-					//Kalman filter
-					headPc = headP + headVarProcess;
-					headG = headPc / (headPc + headVar);
-					headP = (1 - headG) * headPc;
-					headXp = headXe;
-					headZp = headXp;
-					headXe = (headG * (headK - headZp)) + headXp;
-
-					GPSHeading[headRingCount] = headXe;
-					dualGPSHeadingPresent = true;
-					if (debugmodeHeading) { Serial.print("heading filterd: "); Serial.print(GPSHeading[headRingCount]); }
-
-			//roll	
+	
 					if (((GPSSet.headingAngleCorrection > 70) && (GPSSet.headingAngleCorrection < 110))
 						|| ((GPSSet.headingAngleCorrection > 250) && (GPSSet.headingAngleCorrection < 290)))
 					{//ant left+right: headingCorrectionAngle 90 or 270
-						if ((UBXRelPosNED.relPosLength > (GPSSet.AntDist / ((GPSSet.AntDistDeviationFactor / 3) + 0.667))) && (UBXRelPosNED.relPosLength < (GPSSet.AntDist * ((GPSSet.AntDistDeviationFactor / 3) + 0.667)))) {
-							//for roll calc only 1/3 deviation !!	
+						if ((UBXRelPosNED.relPosLength > (GPSSet.AntDist / ((GPSSet.AntDistDeviationFactor / 4) + 0.75))) && (UBXRelPosNED.relPosLength < (GPSSet.AntDist * ((GPSSet.AntDistDeviationFactor / 4) + 0.75)))) {
+							//check if vector lenght between antennas is in range = indicator of heading/roll quality							
+							//for roll calc only 1/4 deviation !!
+							headVarProcess = VarProcessVerySlow;  //set Kalman filter
+							rollVarProcess = VarProcessFast; //set Kalman filter
+			
+				//roll
 							roll = (atan2((double(UBXRelPosNED.relPosD) + (double(UBXRelPosNED.relPosHPD) / 100)), GPSSet.AntDist)) / PI180;
 						}
 						else //else: set roll 0 and filter, so if only one value missing no jump
+
+						//poor signal quality
 						{//start filter GPS pos, set Kalman values
 							if (GPSSet.filterGPSposOnWeakSignal == 1) { 
 								filterGPSpos = true; 
-								latVarProcess = posVarProcessFast;
-								lonVarProcess = posVarProcessFast;
+								latVarProcess = VarProcessVeryFast; //set Kalman filter
+								lonVarProcess = VarProcessVeryFast;
 							}
+							rollVarProcess = VarProcessVerySlow; //roll slowly to 0
 							roll = 0.0;
 							if (debugmode) {
 								Serial.println("poor quality of GPS signal: NO roll calc, heading calc OK");
@@ -82,13 +69,39 @@ void headingRollCalc() {
 					else
 					{
 						if (debugmode||debugmodeHeading) { Serial.print("no roll calc: antennas not left and right. headingCorrectionAngle: "); Serial.println(GPSSet.headingAngleCorrection); }
-					}
+					}		
+			
+			//heading
+					headRingCount = (headRingCount + 1) % GPSHeadingArraySize;
+					GPSHeading[headRingCount] = double(UBXRelPosNED.relPosHeading) * 0.00001;
+					GPSHeading[headRingCount] = GPSHeading[headRingCount] + GPSSet.headingAngleCorrection;
+					if (GPSHeading[headRingCount] >= 360) { GPSHeading[headRingCount] -= 360; }
+					if (GPSHeading[headRingCount] < 0) { GPSHeading[headRingCount] += 360; }
+
+					if (debugmodeHeading) { Serial.print("heading calc: "); Serial.print(GPSHeading[headRingCount]); }
+					//Kalman filter heading
+					//input to the kalman filter
+					headK = GPSHeading[headRingCount];
+
+					//Kalman filter
+					headPc = headP + headVarProcess;
+					headG = headPc / (headPc + headVar);
+					headP = (1 - headG) * headPc;
+					headXp = headXe;
+					headZp = headXp;
+					headXe = (headG * (headK - headZp)) + headXp;
+
+					GPSHeading[headRingCount] = headXe;
+					dualGPSHeadingPresent = true;
+					if (debugmodeHeading) { Serial.print("heading filterd: "); Serial.print(GPSHeading[headRingCount]); }
+
+
 				}
-				else {
+				else {//very poor siganl quality: send only position
 					if (GPSSet.filterGPSposOnWeakSignal == 1) {
 						filterGPSpos = true;
-						latVarProcess = posVarProcessSlow;
-						lonVarProcess = posVarProcessSlow;
+						latVarProcess = VarProcessSlow; //set Kalman filter
+						lonVarProcess = VarProcessSlow;
 					}
 					Serial.println("poor quality of GPS signal: NO heading/roll calc");
 					Serial.print("Antenna distance set: "); Serial.print(GPSSet.AntDist); Serial.print("  Ant. dist from GPS: "); Serial.println(UBXRelPosNED.relPosLength);
