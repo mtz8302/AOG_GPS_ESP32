@@ -5,7 +5,7 @@
 //calculates heading, roll and virtual antenna position
 //filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
 
-//by Matthias Hammer (MTZ8302) 16. Jan 2020
+//by Matthias Hammer (MTZ8302) 23. Jan 2020
 
 //to do: Ethernet integration
 //to think about: will also work with 2 receivers sending GGA, so not only fo UBlox, code is in "EEPROM"
@@ -14,14 +14,22 @@
 #define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!! might work on Ardiuno mega not tested
 struct set {
     // IO pins ----------------------------------------------------------------------------------------
-    byte RX0 = 3;//USB change only if not USB!
-    byte TX0 = 1;//USB change only if not USB!
+    byte RX0 = 3;//USB - change only if not USB!
+    byte TX0 = 1;//USB - change only if not USB!
 
-    byte RX1 = 27;              //simpleRTK TX(xbee) = RX(f9p)
-    byte TX1 = 16;              //simpleRTK RX(xbee) = TX(f9p)
+    //connection plan:
+    // ESP32---- 1.F9P GPS pos ----- 2.F9P Heading-----Sentences
+    //  RX1---------TX1--------------------------------UBX-Nav-PVT out   (=position+speed)
+    //  TX1---------RX1--------------------------------RTCM in         (NTRIP comming from AOG to get absolute/correct postion
+    //  RX2-------------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
+    //  TX2-------------------------------RX1----------
+    //              TX2-------------------RX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in both F9P!! = NTRIP for relative positioning)
 
-    byte RX2 = 25;              //simpleRTK TX1 2. Antenna
-    byte TX2 = 17;              //simpleRTK RX1 2. Antenna
+    byte RX1 = 27;              //1. F9P TX1 GPS pos
+    byte TX1 = 16;              //1. F9P RX1 GPS pos
+
+    byte RX2 = 25;              //2. F9P TX1 Heading
+    byte TX2 = 17;              //2. F9P RX1 Heading
 
     byte LED_PIN_WIFI = 2;      // WiFi Status LED 0 = off
     byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low
