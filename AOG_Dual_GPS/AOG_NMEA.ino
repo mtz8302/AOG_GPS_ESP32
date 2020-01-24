@@ -262,7 +262,7 @@ void buildOGI() {
 
 	//roll
 	if (rollPresent) {
-		double tempRoll = roll;
+		double tempRoll = 0 - roll;
 		if (tempRoll < 0) {
 			OGIBuffer[OGIdigit++] = 0x2D;//-
 			tempRoll *= -1;
