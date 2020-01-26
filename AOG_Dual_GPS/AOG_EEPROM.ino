@@ -845,7 +845,7 @@ void virtualAntennaPoint() {
 	double heading = GPSHeading[headRingCount];
 	double WayToRadius = 0.0;
 
-	virtAntPresent = false;
+	optimizedPosPresent = false;
 
 	if ((virtLatRad != 0.0) && (virtLonRad != 0)) {
 		//shift Antenna to the right
@@ -857,7 +857,7 @@ void virtualAntennaPoint() {
 			virtLatRadTemp = asin((sin(virtLatRad) * cos(WayToRadius)) + (cos(virtLatRad) * sin(WayToRadius) * cos(headingTemp)));
 			virtLonRad = virtLonRad + atan2((sin(headingTemp) * sin(WayToRadius) * cos(virtLatRad)), (cos(WayToRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
 			virtLatRad = virtLatRadTemp;
-			virtAntPresent = true;
+			optimizedPosPresent = true;
 		}
 		//shift Antenna foreward
 		WayToRadius = GPSSet.virtAntForew / 637100080;//cm mean radius of earth WGS84 6.371.000,8m
@@ -866,9 +866,9 @@ void virtualAntennaPoint() {
 			virtLatRadTemp = asin((sin(virtLatRad) * cos(WayToRadius)) + (cos(virtLatRad) * sin(WayToRadius) * cos(heading)));
 			virtLonRad = virtLonRad + atan2((sin(heading) * sin(WayToRadius) * cos(virtLatRad)), (cos(WayToRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
 			virtLatRad = virtLatRadTemp;
-			virtAntPresent = true;
+			optimizedPosPresent = true;
 		}
-		if (virtAntPresent) {
+		if (optimizedPosPresent) {
 			//radians to dec
 			virtLat = virtLatRad / PI180;
 			virtLon = virtLonRad / PI180;

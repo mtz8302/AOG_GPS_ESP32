@@ -117,7 +117,7 @@ void buildOGI() {
 
 	//lat: xx min min . min/10 .. 4.5 digits
 	long Lat = 0;
-	if (virtAntPresent) { Lat = long(virtLat * 10000000); }
+	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
 	else { Lat = UBXPVT1[UBXRingCount1].lat; }
 	//if (debugmode) { Serial.print("UBX1 Lat (deg *10^-7): "); Serial.println(Lat); }
 	//N/S?
@@ -151,7 +151,7 @@ void buildOGI() {
 
 	//lon: xxx min min . min/10 .. 5.5 digits
 	long Lon = 0 ;
-	if (virtAntPresent) { Lon = long(virtLon * 10000000); }
+	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
 	else { Lon = UBXPVT1[UBXRingCount1].lon; }
 	//if (debugmode) { Serial.print("UBX1 Lon (deg *10^-7): "); Serial.println(Lon); }
 	//E/W?
@@ -293,7 +293,10 @@ void buildOGI() {
 		if (dualGPSHeadingPresent) { OGIBuffer[OGIdigit++] = 49; }//1
 		  else {OGIBuffer[OGIdigit++] = 48;}//0
 	}
-
+	if (debugmodeFilterPos) {
+		Serial.print("GNSSfix Type: "); Serial.print(UBXPVT1[UBXRingCount1].fixType);
+		Serial.print(" roll / heading quality : "); Serial.println(OGIBuffer[OGIdigit - 1] - 48);
+	}
 	OGIBuffer[OGIdigit++] = 0x2A;//*
 
 	//checksum
@@ -411,7 +414,7 @@ void buildGGA() {
 
 	//lat: xx min min . min/10 .. 4.5 digits
 	long Lat = 0;
-	if (virtAntPresent) { Lat = long(virtLat * 10000000); }
+	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
 	else { Lat = UBXPVT1[UBXRingCount1].lat; }
 	//if (debugmode) { Serial.print("UBX1 Lat (deg *10^-7): "); Serial.println(Lat); }
 	//N/S?
@@ -445,7 +448,7 @@ void buildGGA() {
 
 	//lon: xxx min min . min/10 .. 5.5 digits
 	long Lon = 0;
-	if (virtAntPresent) { Lon = long(virtLon * 10000000); }
+	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
 	else { Lon = UBXPVT1[UBXRingCount1].lon; }
 	//if (debugmode) { Serial.print("UBX1 Lon (deg *10^-7): "); Serial.println(Lon); }
 	//E/W?

@@ -1,12 +1,21 @@
-//ESP32 programm for 2 UBLOX receivers sending UBXPVT + UBXRelPosNED via UART to ESP32
-//ESP sending $PAOGI sentence via UDP to IP x.x.x.255 at port 9999 or via USB
-//AOG sending NTRIP via UDP to port 2233(or USB) -> ESP sends it to UBLOX via UART
+/*
 
-//calculates heading, roll and virtual antenna position
-//filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
+ESP32 programm for UBLOX receivers to send NMEA to AgOpenGPS or other program
 
-//by Matthias Hammer (MTZ8302) 23. Jan 2020
+works with 1 or 2 receivers
 
+1 receiver to send position from UBXPVT message to ESP32
+2 receivers to get position, roll and heading from UBXPVT + UBXRelPosNED via UART to ESP32
+
+ESP sending $PAOGI or $GGA+VTG+HDT sentence via UDP to IP x.x.x.255 at port 9999 or via USB
+
+AgOpenGPS sending NTRIP via UDP to port 2233(or USB) -> ESP sends it to UBLOX via UART
+
+filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
+
+by Matthias Hammer (MTZ8302) 26. Jan 2020
+
+*/
 //to do: Ethernet integration
 //to think about: will also work with 2 receivers sending GGA, so not only fo UBlox, code is in "EEPROM"
 
@@ -49,7 +58,7 @@ struct set {
     double virtAntRight = 37.0;     //cm to move virtual Antenna to the right
     double virtAntForew = 0.0;      //cm to move virtual Antenna foreward
 
-    double AntDistDeviationFactor = 1.15; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
+    double AntDistDeviationFactor = 1.2; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
     
     byte DataTransVia = 1;          //transfer data via 0: USB 1: WiFi
@@ -80,6 +89,7 @@ bool debugmode = false;
 bool debugmodeUBX = false;
 bool debugmodeHeading = false;
 bool debugmodeVirtAnt = false;
+bool debugmodeFilterPos = false;
 bool EEPROM_clear = false;
 
 
@@ -119,8 +129,10 @@ double VarProcessVeryFast = 0.6;//  used, when GPS signal is weak, no roll, but 
 double VarProcessFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
 double VarProcessMedi = 0.2;//  used, when GPS signal is  weak, no roll no heading
 double VarProcessSlow = 0.1;//  used, when GPS signal is  weak, no roll no heading
-double VarProcessVerySlow = 0.05;//  used, when GPS signal is  weak, no roll no heading
+double VarProcessVerySlow = 0.03;//  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
+
+
 
 #if useWiFi
 //WIFI
@@ -146,12 +158,12 @@ byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 //heading + roll
 constexpr byte GPSHeadingArraySize = 3;
 double GPSHeading[GPSHeadingArraySize];
-byte headRingCount = 0;
+byte headRingCount = 0, noRollCount = 0, noHeadingCount = 0;
 constexpr double PI180 = PI / 180;
-bool dualGPSHeadingPresent = false, virtAntPresent = false, rollPresent = false;
+bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
 double roll = 0.0;
-byte rollRingCont = 0;
-byte dualAntNoValue = 0, dualAntNoValueMax = 15;// if dual Ant value not valid for xx times, send position without correction/heading/roll
+//byte rollRingCont = 0;
+byte dualAntNoValue = 0, dualAntNoValueMax = 6;// if dual Ant value not valid for xx times, send position without correction/heading/roll
 
 
 // Variables ------------------------------
@@ -306,36 +318,46 @@ void loop()
 	getUBX();//read serials    
 
 	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
-	{
+	{Serial.println("new UBX to process");
 		headingRollCalc();
-		if ((dualGPSHeadingPresent) && (rollPresent)) {
+		if (dualGPSHeadingPresent) {
 			//virtual Antenna point?
 			if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
 				((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
 			{//all data there
 				virtualAntennaPoint();
 			}
+
+      filterPosition();//runs allways to fill kalman variables, decide in NMEA buildXXX if filtered position is used
+
 			if (GPSSet.sendGGA) { buildGGA(); }
 			if (GPSSet.sendVTG) { buildVTG(); }
 			if (GPSSet.sendHDT) { buildHDT(); }
 			buildOGI();//should be build anyway, to decide if new data came in
 		}
-		else
+		else //only 1 Antenna: this way
 		{
+			virtAntPosPresent = false;
 			dualAntNoValue++;//watchdog
+				//filter position: set kalman variables
+				//0: no fix 1: GPS only -> filter slow, else filter fast, but filter due to no roll compensation
+			if (UBXPVT1[UBXRingCount1].fixType <= 1) { latVarProcess = VarProcessSlow; lonVarProcess = VarProcessSlow; }
+			else { latVarProcess = VarProcessMedi; lonVarProcess = VarProcessMedi; }
+
+			filterPosition();
+      filterGPSpos = true;
+  
 			if (dualAntNoValue > dualAntNoValueMax) {//no new values exist, so send only pos
 				if ((debugmodeHeading) || (debugmodeVirtAnt)) { Serial.println("no dual Antenna values, no heading/roll, watchdog: send only Pos"); }
 				if (GPSSet.sendGGA) { buildGGA(); }
 				if (GPSSet.sendVTG) { buildVTG(); }
 				if (GPSSet.sendHDT) { buildHDT(); }
-				buildOGI();
+				buildOGI();//should be build anyway, to decide if new data came in
+
+				dualAntNoValue = dualAntNoValueMax;//prevent overflow
 			}
 		}
 	}
-	//GPS LED: got NTRIP?
-
-
-
 
 	if (GPSSet.DataTransVia == 0) {//use USB
 		if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1   
@@ -362,6 +384,7 @@ void loop()
 	}
 
 #if useWiFi
+
 	if (GPSSet.DataTransVia == 1) {//use WiFi
 		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
@@ -382,7 +405,9 @@ void loop()
 			newHDT = false;
 		}
 	}
+
 	doWebInterface();
+
 #endif
     
 }

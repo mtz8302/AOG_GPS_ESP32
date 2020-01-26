@@ -26,40 +26,8 @@ int Aufruf_Zaehler = 0;
 #define ACTION_SET_WiFiLEDon    22
 
 int action;
-/*
-// Radiobutton output
-char output_driver_tab[5][22] = { "None", "Cytron MD30 + SWM", "IBT_2 +SWM", "IBT_2 +PWM Valve", "IBT_2 +Danfoss Valve" };
 
-// Radiobutton analog input
-char was_input_tab[3][25] = { "Arduino/ESP direct", "ADS 1115 single", "ADS 1115 differential" };
-
-// Radiobutton WAS Invert
-char was_invert_tab[2][15] = { "not inverted", "inverted" };
-
-// Radiobutton IMU Heading Unit
-char imu_type_tab[2][10] = { "None", "BNO 055" };
-
-// Radiobutton Inclinometer
-char inclino_type_tab[2][10] = { "None", "MMA 8452" };
-
-// Radiobutton Steerswitch
-char steersw_type_tab[5][15] = { "Switch High", "Switch Low", "Toggle Button", "Analog Buttons","" };
-
-// Radiobutton Workswitch
-char worksw_type_tab[4][8] = { "None", "Digital", "Analog", "" };
-
-// Radiobutton WorkSwitch Invert
-char worksw_invert_tab[2][15] = { "not inverted", "inverted" };
-
-// Radiobutton Encoder
-char encoder_type_tab[2][11] = { "None", "Installed" };
-
-char tmp_string[20];
-//---------------------------------------------------------------------
-
-*/
-
-
+//-------------------------------------------------------------------------------------------------
 
 void doWebInterface() {
 
@@ -78,8 +46,7 @@ void doWebInterface() {
     Serial.print("New Client:\n");           // print a message out the serial port
 
     my_timeout = millis() + 250L;
-    //mtz8302
-   // AP_time = millis();
+
     while (!client_page.available() && (millis() < my_timeout)) delay(10);
     delay(10);
     if (millis() > my_timeout)
@@ -149,9 +116,10 @@ void doWebInterface() {
         Serial.print("   --> Client Disconnected\n");
     }// end if client 
 }
-//---------------------------------------------------------------------
+
+//-------------------------------------------------------------------------------------------------
 // Process given values
-//---------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 void process_Request()
 {
     int myIndex;
@@ -536,10 +504,7 @@ void process_Request()
         if (Pick_Parameter_Zahl("RX2=", HTML_String) == 32) { GPSSet.RX2 = 32; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
         if (Pick_Parameter_Zahl("RX2=", HTML_String) == 33) { GPSSet.RX2 = 33; Serial2.end(); delay(20); Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2); delay(5); EEprom_write_all(); }
 
-    }
-
-
- 
+    } 
     if (action == ACTION_SET_RESTART) {
         if (EEPROM.read(2) == 0) {
             EEPROM.write(2, 1);
@@ -549,9 +514,10 @@ void process_Request()
         }
     }
 }
-//---------------------------------------------------------------------
+
+//-------------------------------------------------------------------------------------------------
 // HTML Seite 01 aufbauen
-//---------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 void make_HTML01() {
 
     strcpy(HTML_String, "<!DOCTYPE html>");
@@ -768,7 +734,7 @@ void make_HTML01() {
     strcat(HTML_String, "This factor is the max deviation for doing the calculations.<br>");
     strcat(HTML_String, "Example: Ant dist at tractor 100cm factor 1.2 = 100*1.2= 120cm; 100/1.2 = 83 cm.<br>"); 
     strcat(HTML_String, "if GPS antenna distance is less than 120 and more than 83 do heading, roll calc is done if deviation is less than 1/4 of it.<br><br>");
-    strcat(HTML_String, "<br>factor: 1.1 - 1.99  recommended: 1.15<br><br>");
+    strcat(HTML_String, "<br>factor: 1.1 - 1.99  recommended: 1.2<br><br>");
     
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
@@ -1008,211 +974,213 @@ void make_HTML01() {
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
 }
-     //--------------------------------------------------------------------------
-     void send_not_found() {
+//--------------------------------------------------------------------------
+void send_not_found() {
 
-       Serial.print("\nSend Not Found\n");
+	Serial.print("\nSend Not Found\n");
 
-       client_page.print("HTTP/1.1 404 Not Found\r\n\r\n");
-       delay(20);
-       //client_page.stop();
-     }
+	client_page.print("HTTP/1.1 404 Not Found\r\n\r\n");
+	delay(20);
+	//client_page.stop();
+}
 
-     //--------------------------------------------------------------------------
-     void send_HTML() {
-       char my_char;
-       int  my_len = strlen(HTML_String);
-       int  my_ptr = 0;
-       int  my_send = 0;
+//--------------------------------------------------------------------------
+void send_HTML() {
+	char my_char;
+	int  my_len = strlen(HTML_String);
+	int  my_ptr = 0;
+	int  my_send = 0;
 
-       //--------------------------------------------------------------------------
-       // in Portionen senden
-       while ((my_len - my_send) > 0) {
-         my_send = my_ptr + MAX_PACKAGE_SIZE;
-         if (my_send > my_len) {
-           client_page.print(&HTML_String[my_ptr]);
-           delay(10);
+	//--------------------------------------------------------------------------
+	// in Portionen senden
+	while ((my_len - my_send) > 0) {
+		my_send = my_ptr + MAX_PACKAGE_SIZE;
+		if (my_send > my_len) {
+			client_page.print(&HTML_String[my_ptr]);
+			delay(10);
 
-           //Serial.println(&HTML_String[my_ptr]);
+			//Serial.println(&HTML_String[my_ptr]);
 
-           my_send = my_len;
-         } else {
-           my_char = HTML_String[my_send];
-           // Auf Anfang eines Tags positionieren
-           while ( my_char != '<') my_char = HTML_String[--my_send];
-           HTML_String[my_send] = 0;
-           client_page.print(&HTML_String[my_ptr]);
-           delay(10);
+			my_send = my_len;
+		}
+		else {
+			my_char = HTML_String[my_send];
+			// Auf Anfang eines Tags positionieren
+			while (my_char != '<') my_char = HTML_String[--my_send];
+			HTML_String[my_send] = 0;
+			client_page.print(&HTML_String[my_ptr]);
+			delay(10);
 
-           //Serial.println(&HTML_String[my_ptr]);
+			//Serial.println(&HTML_String[my_ptr]);
 
-           HTML_String[my_send] =  my_char;
-           my_ptr = my_send;
-         }
-       }
-       //client_page.stop();
-     }
+			HTML_String[my_send] = my_char;
+			my_ptr = my_send;
+		}
+	}
+	//client_page.stop();
+}
 
-     //----------------------------------------------------------------------------------------------
-     void set_colgroup(int w1, int w2, int w3, int w4, int w5) {
-       strcat( HTML_String, "<colgroup>");
-       set_colgroup1(w1);
-       set_colgroup1(w2);
-       set_colgroup1(w3);
-       set_colgroup1(w4);
-       set_colgroup1(w5);
-       strcat( HTML_String, "</colgroup>");
+//----------------------------------------------------------------------------------------------
+void set_colgroup(int w1, int w2, int w3, int w4, int w5) {
+	strcat(HTML_String, "<colgroup>");
+	set_colgroup1(w1);
+	set_colgroup1(w2);
+	set_colgroup1(w3);
+	set_colgroup1(w4);
+	set_colgroup1(w5);
+	strcat(HTML_String, "</colgroup>");
 
-     }
-     //------------------------------------------------------------------------------------------
-     void set_colgroup1(int ww) {
-       if (ww == 0) return;
-       strcat( HTML_String, "<col width=\"");
-       strcati( HTML_String, ww);
-       strcat( HTML_String, "\">");
-     }
+}
+//------------------------------------------------------------------------------------------
+void set_colgroup1(int ww) {
+	if (ww == 0) return;
+	strcat(HTML_String, "<col width=\"");
+	strcati(HTML_String, ww);
+	strcat(HTML_String, "\">");
+}
 
 
-     //---------------------------------------------------------------------
-     void strcatf(char* tx, float f,byte leng, byte dezim) {
-       char tmp[8];
+//---------------------------------------------------------------------
+void strcatf(char* tx, float f, byte leng, byte dezim) {
+	char tmp[8];
 
-       dtostrf(f, leng, dezim, tmp);//f,6,2,tmp
-       strcat (tx, tmp);
-     }
-     //---------------------------------------------------------------------
-     //void strcatl(char* tx, long l) {
-       //char tmp[sizeof l];
-       //memcpy(tmp, l, sizeof l);
-       //strcat (tx, tmp);
-     //}
+	dtostrf(f, leng, dezim, tmp);//f,6,2,tmp
+	strcat(tx, tmp);
+}
+//---------------------------------------------------------------------
+//void strcatl(char* tx, long l) {
+  //char tmp[sizeof l];
+  //memcpy(tmp, l, sizeof l);
+  //strcat (tx, tmp);
+//}
 
-     //---------------------------------------------------------------------
-     void strcati(char* tx, int i) {
-       char tmp[8];
+//---------------------------------------------------------------------
+void strcati(char* tx, int i) {
+	char tmp[8];
 
-       itoa(i, tmp, 10);
-       strcat (tx, tmp);
-     }
+	itoa(i, tmp, 10);
+	strcat(tx, tmp);
+}
 
-     //---------------------------------------------------------------------
-     void strcati2(char* tx, int i) {
-       char tmp[8];
+//---------------------------------------------------------------------
+void strcati2(char* tx, int i) {
+	char tmp[8];
 
-       itoa(i, tmp, 10);
-       if (strlen(tmp) < 2) strcat (tx, "0");
-       strcat (tx, tmp);
-     }
+	itoa(i, tmp, 10);
+	if (strlen(tmp) < 2) strcat(tx, "0");
+	strcat(tx, tmp);
+}
 
-     //---------------------------------------------------------------------
-     int Pick_Parameter_Zahl(const char * par, char * str) {
-       int myIdx = Find_End(par, str);
+//---------------------------------------------------------------------
+int Pick_Parameter_Zahl(const char* par, char* str) {
+	int myIdx = Find_End(par, str);
 
-       if (myIdx >= 0) return  Pick_Dec(str, myIdx);
-       else return -1;
-     }
-     //---------------------------------------------------------------------
-     int Find_End(const char * such, const char * str) {
-       int tmp = Find_Start(such, str);
-       if (tmp >= 0)tmp += strlen(such);
-       return tmp;
-     }
+	if (myIdx >= 0) return  Pick_Dec(str, myIdx);
+	else return -1;
+}
+//---------------------------------------------------------------------
+int Find_End(const char* such, const char* str) {
+	int tmp = Find_Start(such, str);
+	if (tmp >= 0)tmp += strlen(such);
+	return tmp;
+}
 
-     //---------------------------------------------------------------------
-     int Find_Start(const char * such, const char * str) {
-       int tmp = -1;
-       int ww = strlen(str) - strlen(such);
-       int ll = strlen(such);
+//---------------------------------------------------------------------
+int Find_Start(const char* such, const char* str) {
+	int tmp = -1;
+	int ww = strlen(str) - strlen(such);
+	int ll = strlen(such);
 
-       for (int i = 0; i <= ww && tmp == -1; i++) {
-         if (strncmp(such, &str[i], ll) == 0) tmp = i;
-       }
-       return tmp;
-     }
-     //---------------------------------------------------------------------
-     int Pick_Dec(const char * tx, int idx ) {
-       int tmp = 0;
+	for (int i = 0; i <= ww && tmp == -1; i++) {
+		if (strncmp(such, &str[i], ll) == 0) tmp = i;
+	}
+	return tmp;
+}
+//---------------------------------------------------------------------
+int Pick_Dec(const char* tx, int idx) {
+	int tmp = 0;
 
-       for (int p = idx; p < idx + 5 && (tx[p] >= '0' && tx[p] <= '9') ; p++) {
-         tmp = 10 * tmp + tx[p] - '0';
-       }
-       return tmp;
-     }
-     //----------------------------------------------------------------------------
-     int Pick_N_Zahl(const char * tx, char separator, byte n) {//never used?
+	for (int p = idx; p < idx + 5 && (tx[p] >= '0' && tx[p] <= '9'); p++) {
+		tmp = 10 * tmp + tx[p] - '0';
+	}
+	return tmp;
+}
+//----------------------------------------------------------------------------
+int Pick_N_Zahl(const char* tx, char separator, byte n) {//never used?
 
-       int ll = strlen(tx);
-       int tmp = -1;
-       byte anz = 1;
-       byte i = 0;
-       while (i < ll && anz < n) {
-         if (tx[i] == separator)anz++;
-         i++;
-       }
-       if (i < ll) return Pick_Dec(tx, i);
-       else return -1;
-     }
+	int ll = strlen(tx);
+	int tmp = -1;
+	byte anz = 1;
+	byte i = 0;
+	while (i < ll && anz < n) {
+		if (tx[i] == separator)anz++;
+		i++;
+	}
+	if (i < ll) return Pick_Dec(tx, i);
+	else return -1;
+}
 
-     //---------------------------------------------------------------------
-     int Pick_Hex(const char * tx, int idx ) {
-       int tmp = 0;
+//---------------------------------------------------------------------
+int Pick_Hex(const char* tx, int idx) {
+	int tmp = 0;
 
-       for (int p = idx; p < idx + 5 && ( (tx[p] >= '0' && tx[p] <= '9') || (tx[p] >= 'A' && tx[p] <= 'F')) ; p++) {
-         if (tx[p] <= '9')tmp = 16 * tmp + tx[p] - '0';
-         else tmp = 16 * tmp + tx[p] - 55;
-       }
+	for (int p = idx; p < idx + 5 && ((tx[p] >= '0' && tx[p] <= '9') || (tx[p] >= 'A' && tx[p] <= 'F')); p++) {
+		if (tx[p] <= '9')tmp = 16 * tmp + tx[p] - '0';
+		else tmp = 16 * tmp + tx[p] - 55;
+	}
 
-       return tmp;
-     }
+	return tmp;
+}
 
-     //---------------------------------------------------------------------
-     void Pick_Text(char * tx_ziel, char  * tx_quelle, int max_ziel) {
+//---------------------------------------------------------------------
+void Pick_Text(char* tx_ziel, char* tx_quelle, int max_ziel) {
 
-       int p_ziel = 0;
-       int p_quelle = 0;
-       int len_quelle = strlen(tx_quelle);
+	int p_ziel = 0;
+	int p_quelle = 0;
+	int len_quelle = strlen(tx_quelle);
 
-       while (p_ziel < max_ziel && p_quelle < len_quelle && tx_quelle[p_quelle] && tx_quelle[p_quelle] != ' ' && tx_quelle[p_quelle] !=  '&') {
-         if (tx_quelle[p_quelle] == '%') {
-           tx_ziel[p_ziel] = (HexChar_to_NumChar( tx_quelle[p_quelle + 1]) << 4) + HexChar_to_NumChar(tx_quelle[p_quelle + 2]);
-           p_quelle += 2;
-         } else if (tx_quelle[p_quelle] == '+') {
-           tx_ziel[p_ziel] = ' ';
-         }
-         else {
-           tx_ziel[p_ziel] = tx_quelle[p_quelle];
-         }
-         p_ziel++;
-         p_quelle++;
-       }
+	while (p_ziel < max_ziel && p_quelle < len_quelle && tx_quelle[p_quelle] && tx_quelle[p_quelle] != ' ' && tx_quelle[p_quelle] != '&') {
+		if (tx_quelle[p_quelle] == '%') {
+			tx_ziel[p_ziel] = (HexChar_to_NumChar(tx_quelle[p_quelle + 1]) << 4) + HexChar_to_NumChar(tx_quelle[p_quelle + 2]);
+			p_quelle += 2;
+		}
+		else if (tx_quelle[p_quelle] == '+') {
+			tx_ziel[p_ziel] = ' ';
+		}
+		else {
+			tx_ziel[p_ziel] = tx_quelle[p_quelle];
+		}
+		p_ziel++;
+		p_quelle++;
+	}
 
-       tx_ziel[p_ziel] = 0;
-     }
-     //---------------------------------------------------------------------
-     char HexChar_to_NumChar( char c) {
-       if (c >= '0' && c <= '9') return c - '0';
-       if (c >= 'A' && c <= 'F') return c - 55;
-       return 0;
-     }
-     //---------------------------------------------------------------------
-     void exhibit(const char * tx, int v) {
-       Serial.print(tx);
-       Serial.print(v, 1);
-     }
-     //---------------------------------------------------------------------
-     void exhibit(const char * tx, unsigned int v) {
-       Serial.print(tx);
-       Serial.print((int)v, 1);
-     }
-     //---------------------------------------------------------------------
-     void exhibit(const char * tx, unsigned long v) {
-       Serial.print(tx);
-       Serial.print((long)v, 1);
-     }
-     //---------------------------------------------------------------------
-     void exhibit(const char * tx, const char * v) {
-       Serial.print(tx);
-       Serial.print(v);
-     }
+	tx_ziel[p_ziel] = 0;
+}
+//---------------------------------------------------------------------
+char HexChar_to_NumChar(char c) {
+	if (c >= '0' && c <= '9') return c - '0';
+	if (c >= 'A' && c <= 'F') return c - 55;
+	return 0;
+}
+//---------------------------------------------------------------------
+void exhibit(const char* tx, int v) {
+	Serial.print(tx);
+	Serial.print(v, 1);
+}
+//---------------------------------------------------------------------
+void exhibit(const char* tx, unsigned int v) {
+	Serial.print(tx);
+	Serial.print((int)v, 1);
+}
+//---------------------------------------------------------------------
+void exhibit(const char* tx, unsigned long v) {
+	Serial.print(tx);
+	Serial.print((long)v, 1);
+}
+//---------------------------------------------------------------------
+void exhibit(const char* tx, const char* v) {
+	Serial.print(tx);
+	Serial.print(v);
+}
 
 #endif
