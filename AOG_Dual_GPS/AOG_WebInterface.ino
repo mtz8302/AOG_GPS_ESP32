@@ -2,7 +2,7 @@
 
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
-char HTML_String[20000];
+char HTML_String[22000];
 char HTTP_Header[150];
 
 // Allgemeine Variablen
