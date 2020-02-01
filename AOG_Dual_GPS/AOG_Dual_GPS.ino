@@ -318,7 +318,7 @@ void loop()
 	getUBX();//read serials    
 
 	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
-	{Serial.println("new UBX to process");
+	{
 		headingRollCalc();
 		if (dualGPSHeadingPresent) {
 			//virtual Antenna point?
