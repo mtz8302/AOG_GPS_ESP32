@@ -62,19 +62,21 @@ $PAOGI
 
 From RMC or VTG:
 (13) 022.4 Speed over the ground in knots
-(14) 084.4 Track angle in degrees True
 
 FROM IMU:
-(15) XXX.xx IMU Heading in degrees True
-(16) XXX.xx Roll angle in degrees (positive roll = right leaning - right down, left up)
-(17) XXX.xx Pitch angle in degrees (Positive pitch = nose up)
-(18) XXX.xx Yaw Rate in Degrees / second
+(14) XXX.xx IMU Heading in degrees True
+(15) XXX.xx Roll angle in degrees (positive roll = right leaning - right down, left up)
+(16) XXX.xx Pitch angle in degrees (Positive pitch = nose up)
+(17) XXX.xx Yaw Rate in Degrees / second
 
-(19) GPS roll/heading quality:
+(18) GPS roll/heading quality:
 	0 = no roll/heading=no corrected pos 
 	1 = heading OK, no roll 
 	2 = OK, corrected position
-
+(19) driving Direction
+	0 = not sure / standing still
+	1 = forewards
+	2 = backwards
 
 *CHKSUM
 */
@@ -297,6 +299,10 @@ void buildOGI() {
 		Serial.print("GNSSfix Type: "); Serial.print(UBXPVT1[UBXRingCount1].fixType);
 		Serial.print(" roll / heading quality : "); Serial.println(OGIBuffer[OGIdigit - 1] - 48);
 	}
+	OGIBuffer[OGIdigit++] = 0x2C;//,
+	//direction of driving
+	OGIBuffer[OGIdigit++] = drivDirect + 48;
+
 	OGIBuffer[OGIdigit++] = 0x2A;//*
 
 	//checksum

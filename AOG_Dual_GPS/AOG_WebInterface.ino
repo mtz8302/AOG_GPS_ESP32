@@ -734,7 +734,7 @@ void make_HTML01() {
     strcat(HTML_String, "This factor is the max deviation for doing the calculations.<br>");
     strcat(HTML_String, "Example: Ant dist at tractor 100cm factor 1.2 = 100*1.2= 120cm; 100/1.2 = 83 cm.<br>"); 
     strcat(HTML_String, "if GPS antenna distance is less than 120 and more than 83 do heading, roll calc is done if deviation is less than 1/4 of it.<br><br>");
-    strcat(HTML_String, "<br>factor: 1.1 - 1.99  recommended: 1.2<br><br>");
+    strcat(HTML_String, "<br>factor: 1.1 - 1.99  recommended: 1.2 - 1.3<br><br>");
     
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");

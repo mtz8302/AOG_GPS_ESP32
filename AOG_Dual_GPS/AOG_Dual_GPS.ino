@@ -58,7 +58,7 @@ struct set {
     double virtAntRight = 37.0;     //cm to move virtual Antenna to the right
     double virtAntForew = 0.0;      //cm to move virtual Antenna foreward
 
-    double AntDistDeviationFactor = 1.2; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
+    double AntDistDeviationFactor = 1.25; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
     
     byte DataTransVia = 1;          //transfer data via 0: USB 1: WiFi
@@ -158,7 +158,7 @@ byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 //heading + roll
 constexpr byte GPSHeadingArraySize = 3;
 double GPSHeading[GPSHeadingArraySize];
-byte headRingCount = 0, noRollCount = 0, noHeadingCount = 0;
+byte headRingCount = 0, noRollCount = 0, noHeadingCount = 0, drivDirect = 0;
 constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
 double roll = 0.0;
@@ -318,7 +318,7 @@ void loop()
 	getUBX();//read serials    
 
 	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
-	{
+	{//Serial.println("new UBX to process");
 		headingRollCalc();
 		if (dualGPSHeadingPresent) {
 			//virtual Antenna point?

@@ -3,6 +3,7 @@ void headingRollCalc() {
 	rollPresent = false;
 	dualGPSHeadingPresent = false;
 	filterGPSpos = false;
+	drivDirect = 0;//0=no value 1=foreward 2=backwards
 
 	if (existsUBXRelPosNED) {
 		//check if all values are vaild
@@ -81,7 +82,44 @@ void headingRollCalc() {
 					noHeadingCount = 0;
 
 					if (debugmodeHeading) { Serial.print("heading filterd: "); Serial.print(GPSHeading[headRingCount]); }
-					//filter roll
+
+				//driving direction
+					if (UBXPVT1[UBXRingCount1].gSpeed > 120) {//driving at least 0.43km/h
+						//get heading of motion from postion GPS -> calc min/max value
+						//for values from 359 to 0 min could get <0 and max could get >360
+						double temphead = UBXPVT1[UBXRingCount1].headMot * 0.00001;
+						double headmin = temphead + 330;
+						if (headmin > 360) { headmin -= 360; }
+						if (GPSHeading[headRingCount] < 30) { if (headmin > 330) { headmin -= 360; } }
+						double headmax = temphead + 30;
+						if (temphead < 330) { if (headmax > 360) { headmax -= 360; } }
+						//driving forewards
+						if (headmax < headmin) { headmax += 360; }
+						if ((GPSHeading[headRingCount] > headmin) && (GPSHeading[headRingCount] < headmax)) {
+							drivDirect = 1; }
+						else {
+							if (temphead > 330) { headmin -= 360; headmax -= 360; }
+							if ((GPSHeading[headRingCount] > headmin) && (GPSHeading[headRingCount] < headmax)) {drivDirect = 1;}
+						}
+						//Serial.print("forew: min: "); Serial.print(headmin); Serial.print(" max: "); Serial.print(headmax); Serial.print(" heading: "); Serial.println(GPSHeading[headRingCount]);
+
+						headmin = temphead + 150;
+						if (headmin > 360) { headmin -= 360; }
+						if (GPSHeading[headRingCount] < 30) { if (headmin > 330) { headmin -= 360; } }
+						headmax = temphead + 210;
+						if (headmax > 390){headmax -= 360;}
+						if (headmax < headmin) { headmax += 360; }
+						//driving backwards?
+						if ((GPSHeading[headRingCount] > headmin) && (GPSHeading[headRingCount] < headmax)) { drivDirect = 2; }
+						else {
+							if (GPSHeading[headRingCount] <30) { headmin -= 360; headmax -= 360; }
+							if ((GPSHeading[headRingCount] > headmin) && (GPSHeading[headRingCount] < headmax)) {drivDirect = 2;}
+						}
+						//Serial.print("backw: min: "); Serial.print(headmin); Serial.print(" max: "); Serial.print(headmax); Serial.print(" heading: "); Serial.println(GPSHeading[headRingCount]);
+					}
+					if (debugmodeHeading) { Serial.print("driving direction: "); Serial.println(drivDirect); }
+
+				//filter roll
 					rollK = roll;//input
 					rollPc = rollP + rollVarProcess;
 					rollG = rollPc / (rollPc + rollVar);
@@ -213,7 +251,7 @@ void virtualAntennaPoint() {
 void filterPosition() {
 	//input to the kalman filter
 	if (virtAntPosPresent) { latK = virtLat; lonK = virtLon; }
-	else { latK = long(UBXPVT1[UBXRingCount1].lat)* 0.0000001;lonK = long(UBXPVT1[UBXRingCount1].lon) * 0.0000001; Serial.println("use UBX for pos");}
+	else { latK = long(UBXPVT1[UBXRingCount1].lat)* 0.0000001;lonK = long(UBXPVT1[UBXRingCount1].lon) * 0.0000001;}
 
 	if (debugmodeHeading || debugmodeFilterPos) { Serial.print(" lat: "); Serial.print(latK, 7); }
 
