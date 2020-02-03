@@ -2,7 +2,7 @@
 
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
-char HTML_String[22000];
+char HTML_String[24000];
 char HTTP_Header[150];
 
 // Allgemeine Variablen
@@ -131,6 +131,7 @@ void process_Request()
     }
     action = Pick_Parameter_Zahl("ACTION=", HTML_String);
 
+    if (action != ACTION_SET_RESTART) { EEprom_unblock_restart(); }
     if (action == ACTION_SET_loadDefault) {
         EEprom_read_default();
         delay(5);
@@ -149,8 +150,11 @@ void process_Request()
             for (int i = 0; i < 24; i++) GPSSet.password[i] = 0x00;
             Pick_Text(GPSSet.password, &HTML_String[myIndex], 24);
             exhibit("Password  : ", GPSSet.password);
-            EEprom_write_all();
+            
         }
+        int tempint = Pick_Parameter_Zahl("timeoutRout=", HTML_String);
+        if ((tempint > 20) && (tempint < 1000)) { GPSSet.timeoutRouter = tempint; }
+        EEprom_write_all();
     }
     if (action == ACTION_SET_GPSPosCorrByRoll) {
         if (Pick_Parameter_Zahl("GPSPosCorrByRoll=", HTML_String) == 0) GPSSet.GPSPosCorrByRoll = 0;
@@ -506,7 +510,7 @@ void process_Request()
 
     } 
     if (action == ACTION_SET_RESTART) {
-        if (EEPROM.read(2) == 0) {
+        if (EEPROM.read(2) == 0) {//prevents from restarting, when webpage is reloaded. Is set to 0, when other ACTION than restart is called
             EEPROM.write(2, 1);
             EEPROM.commit();
             delay(2000);
@@ -582,6 +586,16 @@ void make_HTML01() {
     strcat(HTML_String, GPSSet.password);
     strcat(HTML_String, "\"></td>");
     strcat(HTML_String, "</tr>");
+
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td colspan=\"3\">time (s) trying to connect to network</td></tr>");
+    strcat(HTML_String, "<td colspan=\"3\">after time has passed access point is opened</td></tr>");
+    strcat(HTML_String, "<tr><td></td><td><input type = \"number\"  name = \"timeoutRout\" min = \"20\" max = \"1000\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
+    strcati(HTML_String, GPSSet.timeoutRouter);
+    strcat(HTML_String, "\"></td>");
+    strcat(HTML_String, "</tr>");
+
     strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
     strcat(HTML_String, "<tr><td colspan=\"2\"><b>Restart NTRIP client for changes to take effect</b></td>");
     strcat(HTML_String, "<td><button style= \"width:120px\" name=\"ACTION\" value=\"");

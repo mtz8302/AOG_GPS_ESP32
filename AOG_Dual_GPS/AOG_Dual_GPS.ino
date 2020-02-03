@@ -70,7 +70,7 @@ struct set {
 
     const char* ssid_ap = "GPS_unit_ESP_Net";// name of Access point, if no WiFi found
     const char* password_ap = "";
-    unsigned long timeoutRouter = 65;       //time (s) to search for existing WiFi, than starting Accesspoint 
+    int timeoutRouter = 120;       //time (s) to search for existing WiFi, than starting Accesspoint 
 
     //static IP
     byte myIP[4] = { 192, 168, 1, 79 };     // Roofcontrol module 

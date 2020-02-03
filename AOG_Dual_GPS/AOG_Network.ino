@@ -15,7 +15,7 @@ void WiFi_Start_STA() {
   timeout = millis() + (GPSSet.timeoutRouter * 1000);
   Serial.print("try to connect to WiFi: "); Serial.println(GPSSet.ssid);
   while (WiFi.status() != WL_CONNECTED && millis() < timeout) {
-    delay(50);
+    delay(500);
     Serial.print(".");
     //WIFI LED blink in double time while connecting
     if (!LED_WIFI_ON) {

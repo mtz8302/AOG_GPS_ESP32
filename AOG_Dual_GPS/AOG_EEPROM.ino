@@ -49,7 +49,19 @@ void EEprom_write_all() {
 	delay(2);
 	EEPROM.commit();
 }
+
 //--------------------------------------------------------------
+
+void EEprom_unblock_restart() {
+	if (EEPROM.read(2) != 0) {
+		EEPROM.write(2, 0); // reset Restart blocker
+		delay(2);
+		EEPROM.commit();
+	}
+}
+
+//--------------------------------------------------------------
+
 void EEprom_read_all() {
 
 	EEPROM.get(3, GPSSet);
