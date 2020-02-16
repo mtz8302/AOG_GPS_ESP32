@@ -1,10 +1,9 @@
-#if useWiFi
 //--------------------------------------------------------------
 //  EEPROM Data Handling
 //--------------------------------------------------------------
 #define EEPROM_SIZE 512
 #define EE_ident1 0xED  // Marker Byte 0 + 1
-#define EE_ident2 0xED
+#define EE_ident2 0x40
 
 
 //--------------------------------------------------------------
@@ -111,10 +110,6 @@ void EEprom_show_memory() {
 		c2++;
 	}
 }
-
-
-
-#endif
 
 
 //parser for 2x UBX PVT (not only RelPosNED)

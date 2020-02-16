@@ -1,4 +1,3 @@
-#if useWiFi
 //---------------------------------------------------------------------
 // start WiFi in Workstation mode = log to existing WiFi
 
@@ -110,7 +109,7 @@ void doUDPNtrip() {
 	udpNtrip.onPacket([](AsyncUDPPacket packet)
 		{
 			if (GPSSet.debugmode) { Serial.println("got NTRIP data"); }
-			for (int i = 0; i < packet.length(); i++)
+			for (unsigned int i = 0; i < packet.length(); i++)
 			{
 				Serial1.write(packet.data()[i]);
 			}
@@ -123,5 +122,3 @@ void doUDPNtrip() {
 	}
 
 }
-
-#endif

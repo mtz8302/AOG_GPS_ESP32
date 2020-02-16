@@ -1,5 +1,3 @@
-#if useWiFi
-
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
 char HTML_String[24000];
@@ -239,6 +237,8 @@ void process_Request()
                 delay(500);
             }
         }
+        if (Pick_Parameter_Zahl("UBXFlagCheck=", HTML_String) == 0) GPSSet.checkUBXFlags = 0;
+        if (Pick_Parameter_Zahl("UBXFlagCheck=", HTML_String) == 1) GPSSet.checkUBXFlags = 1;
         if (Pick_Parameter_Zahl("GPSPosFilter=", HTML_String) == 0) GPSSet.filterGPSposOnWeakSignal = 0;
         if (Pick_Parameter_Zahl("GPSPosFilter=", HTML_String) == 1) GPSSet.filterGPSposOnWeakSignal = 1;
         EEprom_write_all();
@@ -673,9 +673,9 @@ void make_HTML01() {
     //---------------------------------------------------------------------------------------------  
     // Antenna virtual position
     strcat(HTML_String, "<h2>Antenna virtual position</h2>");
-    strcat(HTML_String, "moves the antenna point right and foreward<br>");
-    strcat(HTML_String, "so you can eliminate antenna offset<br>");
-    strcat(HTML_String, "don't move more than antenna distance<br><br>");
+    strcat(HTML_String, "Moves the antenna point to the right and foreward,<br>");
+    strcat(HTML_String, "so you can eliminate antennas offset.<br>");
+    strcat(HTML_String, "Don't move more than antenna distance.<br><br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
@@ -704,7 +704,7 @@ void make_HTML01() {
     //---------------------------------------------------------------------------------------------  
     // heading angle correction 
     strcat(HTML_String, "<h2>Heading angle correction</h2>");
-    strcat(HTML_String, "set to 90 if antenna for position is left and other right<br><br>");
+    strcat(HTML_String, "Set to 90 if antenna for position is right and other left.<br><br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
@@ -729,7 +729,7 @@ void make_HTML01() {
     //---------------------------------------------------------------------------------------------  
     // Roll angle correction 
     strcat(HTML_String, "<h2>Roll angle correction</h2>");
-    strcat(HTML_String, "antennas must be left + right to be able to calculate roll<br><br>");
+    strcat(HTML_String, "Antennas must be left + right to be able to calculate roll.<br><br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
@@ -751,7 +751,7 @@ void make_HTML01() {
     //---------------------------------------------------------------------------------------------  
     // GPS position correction by roll 
     strcat(HTML_String, "<h2>Correct GPS position using roll</h2>");
-    strcat(HTML_String, "antennas must be left + right to be able to calculate roll<br><br>");
+    strcat(HTML_String, "Antennas must be left + right to be able to calculate roll.<br><br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
@@ -776,13 +776,15 @@ void make_HTML01() {
 
     //---------------------------------------------------------------------------------------------  
     // heading calc antenna dist deviation + filter postion
-    strcat(HTML_String, "<h2>Max deviation for heading/roll calculation</h2>");
+    strcat(HTML_String, "<h2>GPS Signal quality check</h2>");        
+    strcat(HTML_String,"<b>Max deviation for heading/roll calculation</b><br><br>");
     strcat(HTML_String, "If GPS signal is weak, heading and roll calc is wrong.<br>");
-    strcat(HTML_String, "To check this the antanna distance messured by GPS is compared with antenna distance from setup.<br>");
+    strcat(HTML_String, "To check this, the antenna distance messured by GPS is compared with antenna distance from setup.<br>");
     strcat(HTML_String, "This factor is the max deviation for doing the calculations.<br>");
     strcat(HTML_String, "Example: Ant dist at tractor 100cm factor 1.2 = 100*1.2= 120cm; 100/1.2 = 83 cm.<br>"); 
-    strcat(HTML_String, "if GPS antenna distance is less than 120 and more than 83 do heading, roll calc is done if deviation is less than 1/4 of it.<br><br>");
-    strcat(HTML_String, "<br>factor: 1.1 - 1.99  recommended: 1.2 - 1.3<br><br>");
+    strcat(HTML_String, "If GPS antenna distance is less than 120 and more than 83 heading calcultaion is done.<br>");
+    strcat(HTML_String, "Roll calculation is only done, if deviation is less than 1 / 4 of it.<br> <br>");
+    strcat(HTML_String, "<b>factor: 1.1 - 1.99  recommended: 1.2 - 1.3. For new setups use 1.99 to test!</b><br>");
     
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
@@ -796,8 +798,25 @@ void make_HTML01() {
     strcati(HTML_String, ACTION_SET_AntDistDevFact);
     strcat(HTML_String, "\">Apply and Save</button></td>");
     strcat(HTML_String, "</tr>");
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "<br>filter GPS position on weak signal</b><br>");
+    strcat(HTML_String, "</table><br>");
+
+    strcat(HTML_String, "<b>Check UBX flags for signal quality</b><br>");
+    strcat(HTML_String, "With some bases for RTK, the flags sometimes fall back, so position will jump.<br>");
+    strcat(HTML_String, "In this case turn check of UBX falgs OFF<br>");
+    strcat(HTML_String, "<table>");
+    set_colgroup(300, 250, 150, 0, 0);
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"UBXFlagCheck\" id=\"JZ\" value=\"0\"");
+    if (GPSSet.checkUBXFlags == 0)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">OFF</label></td>");;
+    strcat(HTML_String, "</tr>");
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"UBXFlagCheck\" id=\"JZ\" value=\"1\"");
+    if (GPSSet.checkUBXFlags == 1)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">ON (default)</label></td></tr>");
+    strcat(HTML_String, "</table><br>");
+
+    strcat(HTML_String, "<b>Filter GPS position on weak signal</b><br>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
     strcat(HTML_String, "<tr>");
@@ -819,7 +838,7 @@ void make_HTML01() {
 
     //---------------------------------------------------------------------------------------------
     // Checkboxes Messages
-    strcat(HTML_String, "<h2>Messages to send</h2>");
+    strcat(HTML_String, "<h2>Messages to send to AgOpenGPS</h2>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
@@ -1282,5 +1301,3 @@ void exhibit(const char* tx, const char* v) {
 	Serial.print(tx);
 	Serial.print(v);
 }
-
-#endif

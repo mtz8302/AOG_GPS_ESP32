@@ -16,6 +16,8 @@
 //change stettings to your need. Afterwards you can change them via webinterface x.x.x.79 (192.168.1.79)
 //if connection to your network fails an accesspoint is opened: webinterface 192.168.1.1
 
+//use serial monitor at USB port, to get sebug messages and IP for webinterface at ESP start.
+
 //for easier setup:
 //use webinterface, turn debugmodeUBX on and change GPIO pin until you get data from the UBlox receivers on USB serial monitor
 
@@ -23,56 +25,32 @@
 //So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
 
 
-#define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!! might work on Ardiuno mega not tested
 struct set {
-    // IO pins ----------------------------------------------------------------------------------------
-    byte RX0 = 3;//USB - change only if not USB!
-    byte TX0 = 1;//USB - change only if not USB!
-
     //connection plan:
-    // ESP32---- 1.F9P GPS pos ----- 2.F9P Heading-----Sentences
-    //  RX1---------TX1--------------------------------UBX-Nav-PVT out   (=position+speed)
-    //  TX1---------RX1--------------------------------RTCM in         (NTRIP comming from AOG to get absolute/correct postion
-    //  RX2-------------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
-    //  TX2-------------------------------RX1----------
-    //              RX2-------------------TX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in both F9P!! = NTRIP for relative positioning)
+    // ESP32--- Right F9P GPS pos --- Left F9P Heading-----Sentences
+    //  RX1----------TX1--------------------------------UBX-Nav-PVT out   (=position+speed)
+    //  TX1----------RX1--------------------------------RTCM in           (NTRIP comming from AOG to get absolute/correct postion
+    //  RX2--------------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
+    //  TX2--------------------------------RX1----------
+    //               RX2-------------------TX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in both F9P!! = NTRIP for relative positioning)
+  
+    // IO pins ----------------------------------------------------------------------------------------
+    byte RX1 = 27;              //right F9P TX1 GPS pos
+    byte TX1 = 16;              //right F9P RX1 GPS pos
 
-    byte RX1 = 27;              //1. F9P TX1 GPS pos
-    byte TX1 = 16;              //1. F9P RX1 GPS pos
-
-    byte RX2 = 25;              //2. F9P TX1 Heading
-    byte TX2 = 17;              //2. F9P RX1 Heading
+    byte RX2 = 25;              //left F9P TX1 Heading
+    byte TX2 = 17;              //left F9P RX1 Heading
 
     byte LED_PIN_WIFI = 2;      // WiFi Status LED 0 = off
-    byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low
+    byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low#
 
-    byte AOGNtrip = 1;          // AOG NTRIP client 0:off 1:on listens to UDP port or USB serial
-    byte sendOGI = 1;           //1: send NMEA message 0: off
-    byte sendVTG = 0;           //1: send NMEA message 0: off
-    byte sendGGA = 0;           //1: send NMEA message 0: off
-    byte sendHDT = 0;           //1: send NMEA message 0: off
-
-    byte GPSPosCorrByRoll = 1;      // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
-    double rollAngleCorrection = 0.0;
-
-    double headingAngleCorrection = 90;
-    double AntDist = 74.0;          //cm distance between Antennas
-    double AntHight = 228.0;        //cm hight of Antenna
-    double virtAntRight = 42.0;     //cm to move virtual Antenna to the right
-    double virtAntForew = 0.0;      //cm to move virtual Antenna foreward
-
-    double AntDistDeviationFactor = 1.25; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
-    byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
-    
-    byte DataTransVia = 1;          //transfer data via 0: USB 1: WiFi
-#if useWiFi
     //WiFi---------------------------------------------------------------------------------------------
     //tractors WiFi
     char ssid[24] = "Fendt_209V";           // WiFi network Client name
     char password[24] = "";                 // WiFi network password//Accesspoint name and password
 
-    char ssid_ap[24] = "GPS_unit_ESP_Net";// name of Access point, if no WiFi found, NO password!!
-    int timeoutRouter = 120;       //time (s) to search for existing WiFi, than starting Accesspoint 
+    char ssid_ap[24] = "GPS_unit_ESP_Net";  // name of Access point, if no WiFi found, NO password!!
+    int timeoutRouter = 120;                //time (s) to search for existing WiFi, than starting Accesspoint 
 
     //static IP
     byte myIP[4] = { 192, 168, 1, 79 };     // Roofcontrol module 
@@ -84,17 +62,41 @@ struct set {
     unsigned int portAOG = 8888;            //port to listen for AOG
     unsigned int AOGNtripPort = 2233;       //port NTRIP data from AOG comes in
     unsigned int portDestination = 9999;    //Port of AOG that listens
-#endif
+
+    //Antennas position
+    double AntDist = 74.0;                //cm distance between Antennas
+    double AntHight = 228.0;              //cm hight of Antenna
+    double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
+    double virtAntForew = 0.0;            //cm to move virtual Antenna foreward
+    double headingAngleCorrection = 90;
+
+    double AntDistDeviationFactor = 1.25; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
+    byte checkUBXFlags = 1;               //UBX sending quality flags, when used with RTK sometimes 
+    byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
+   
+    byte GPSPosCorrByRoll = 1;            // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
+    double rollAngleCorrection = 0.0; 
+   
+    byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
+
+    byte AOGNtrip = 1;                    // AOG NTRIP client 0:off 1:on listens to UDP port or USB serial
+    byte sendOGI = 1;                     //1: send NMEA message 0: off
+    byte sendVTG = 0;                     //1: send NMEA message 0: off
+    byte sendGGA = 0;                     //1: send NMEA message 0: off
+    byte sendHDT = 0;                     //1: send NMEA message 0: off
+
 
     bool debugmode = false;
     bool debugmodeUBX = false;
     bool debugmodeHeading = false;
     bool debugmodeVirtAnt = false;
     bool debugmodeFilterPos = false;
+
 }; set GPSSet;
 
 
-bool EEPROM_clear = false;
+bool EEPROM_clear = false;  //set to true when changing settings to write them as default values: true -> flash -> boot -> false -> flash again
+
 
 
 // WiFistatus LED 
@@ -118,6 +120,11 @@ double headK, headPc, headG, headXp, headZp, headXe;
 double headP = 1.0;
 double headVar = 0.1; // variance, smaller, more faster filtering
 double headVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
+//Kalman filter heading
+double headVTGK, headVTGPc, headVTGG, headVTGXp, headVTGZp, headVTGXe;
+double headVTGP = 1.0;
+double headVTGVar = 0.1; // variance, smaller, more faster filtering
+double headVTGVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
 //Kalman filter lat
 double latK, latPc, latG, latXp, latZp, latXe;
 double latP = 1.0;
@@ -129,21 +136,20 @@ double lonP = 1.0;
 double lonVar = 0.1; // variance, smaller, more faster filtering
 double lonVarProcess = 0.3;// replaced by fast/slow depending on GPS quality
 
-double VarProcessVeryFast = 0.6;//  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessMedi = 0.2;//0,2  used, when GPS signal is  weak, no roll no heading
-double VarProcessSlow = 0.08;//  0,1used, when GPS signal is  weak, no roll no heading
-double VarProcessVerySlow = 0.01;//0,03  used, when GPS signal is  weak, no roll no heading
+double VarProcessVeryFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessFast = 0.2;//  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessMedi = 0.1;//0,2  used, when GPS signal is  weak, no roll no heading
+double VarProcessSlow = 0.005;//  0,1used, when GPS signal is  weak, no roll no heading
+double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
 
 
-#if useWiFi
 //WIFI
 IPAddress IPToAOG(192, 168, 1, 255);//IP address to send UDP data to
 byte myIPEnding = 79;             //ending of IP adress x.x.x.79 
 byte my_WiFi_Mode = 0;  // WIFI_STA = 1 = Workstation  WIFI_AP = 2  = Accesspoint
-#endif
+
 
 //UBX
 byte UBXRingCount1 = 0, UBXDigit1 = 0, UBXDigit2 = 0, OGIfromUBX = 0;
@@ -161,12 +167,11 @@ byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
 constexpr byte GPSHeadingArraySize = 3;
-double GPSHeading[GPSHeadingArraySize];
+double GPSHeading[GPSHeadingArraySize], headingVTG = 0;
 byte headRingCount = 0, noRollCount = 0, noHeadingCount = 0, drivDirect = 0;
 constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
 double roll = 0.0;
-//byte rollRingCont = 0;
 byte dualAntNoValue = 0, dualAntNoValueMax = 6;// if dual Ant value not valid for xx times, send position without correction/heading/roll
 
 
@@ -245,7 +250,7 @@ struct NAV_RELPOSNED {
 };
 NAV_RELPOSNED UBXRelPosNED;
 
-#if useWiFi
+
 #include <AsyncUDP.h>
 #include <WiFiSTA.h>
 #include <WiFiServer.h>
@@ -259,7 +264,8 @@ AsyncUDP udpRoof;
 AsyncUDP udpNtrip;
 WiFiServer server(80);
 WiFiClient client_page;
-#endif
+
+// SETUP ------------------------------------------------------------------------------------------
 
 void setup()
 {
@@ -278,12 +284,6 @@ void setup()
 
     if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }
 
-#if !useWiFi
-    GPSSet.DataTransVia = 0;//set data via USB
-#endif
-    
-
-#if useWiFi
     restoreEEprom();
     delay(10);
 
@@ -314,8 +314,9 @@ void setup()
     }
     delay(100);
     server.begin();
-#endif
 }
+
+// MAIN loop  -------------------------------------------------------------------------------------------
 
 void loop()
 {
@@ -387,8 +388,6 @@ void loop()
 		}
 	}
 
-#if useWiFi
-
 	if (GPSSet.DataTransVia == 1) {//use WiFi
 		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
@@ -411,7 +410,5 @@ void loop()
 	}
 
 	doWebInterface();
-
-#endif
     
 }

@@ -62,6 +62,7 @@ $PAOGI
 
 From RMC or VTG:
 (13) 022.4 Speed over the ground in knots
+(14) 054.7,T      True track made good (degrees)
 
 FROM IMU:
 (14) XXX.xx IMU Heading in degrees True
@@ -226,6 +227,8 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//ground speed knots
+	if (drivDirect == 2) {//backwards, so write "-"
+		OGIBuffer[OGIdigit++] = 0x2D;}
 	long speed1000Knotes = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed);
 	OGIBuffer[OGIdigit++] = (speed1000Knotes / 10000) + 48;
 	speed1000Knotes = speed1000Knotes % 10000;
@@ -258,6 +261,22 @@ void buildOGI() {
 		OGIBuffer[OGIdigit++] = temp + 48;
 		OGIBuffer[OGIdigit++] = 0x2E;//.
 		temp = byte(tempGPSHead*10);
+		OGIBuffer[OGIdigit++] = temp + 48;
+	}
+	else {
+		if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(GPSHeading[headRingCount]); }
+		double tempGPSHead = headingVTG;
+		temp = byte(tempGPSHead / 100);
+		tempGPSHead = tempGPSHead - temp * 100;
+		OGIBuffer[OGIdigit++] = temp + 48;
+		temp = byte(tempGPSHead / 10);
+		tempGPSHead = tempGPSHead - temp * 10;
+		OGIBuffer[OGIdigit++] = temp + 48;
+		temp = byte(tempGPSHead);
+		tempGPSHead = tempGPSHead - temp;
+		OGIBuffer[OGIdigit++] = temp + 48;
+		OGIBuffer[OGIdigit++] = 0x2E;//.
+		temp = byte(tempGPSHead * 10);
 		OGIBuffer[OGIdigit++] = temp + 48;
 	}
 	OGIBuffer[OGIdigit++] = 0x2C;//,
