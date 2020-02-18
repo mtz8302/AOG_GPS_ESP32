@@ -24,6 +24,7 @@
 //the settings below are written as defalt values and can be reloaded.
 //So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
 
+#define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!! no WiFi should work on Ardiuno mega
 
 struct set {
     //connection plan:
@@ -45,6 +46,7 @@ struct set {
     byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low#
 
     //WiFi---------------------------------------------------------------------------------------------
+#if useWiFi
     //tractors WiFi
     char ssid[24] = "Fendt_209V";           // WiFi network Client name
     char password[24] = "";                 // WiFi network password//Accesspoint name and password
@@ -62,6 +64,7 @@ struct set {
     unsigned int portAOG = 8888;            //port to listen for AOG
     unsigned int AOGNtripPort = 2233;       //port NTRIP data from AOG comes in
     unsigned int portDestination = 9999;    //Port of AOG that listens
+#endif
 
     //Antennas position
     double AntDist = 74.0;                //cm distance between Antennas
@@ -70,7 +73,7 @@ struct set {
     double virtAntForew = 0.0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
-    double AntDistDeviationFactor = 1.25; // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
+    double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte checkUBXFlags = 1;               //UBX sending quality flags, when used with RTK sometimes 
     byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
    
@@ -143,13 +146,12 @@ double VarProcessSlow = 0.005;//  0,1used, when GPS signal is  weak, no roll no 
 double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
-
-
+#if useWiFi
 //WIFI
 IPAddress IPToAOG(192, 168, 1, 255);//IP address to send UDP data to
 byte myIPEnding = 79;             //ending of IP adress x.x.x.79 
 byte my_WiFi_Mode = 0;  // WIFI_STA = 1 = Workstation  WIFI_AP = 2  = Accesspoint
-
+#endif
 
 //UBX
 byte UBXRingCount1 = 0, UBXDigit1 = 0, UBXDigit2 = 0, OGIfromUBX = 0;
@@ -250,7 +252,7 @@ struct NAV_RELPOSNED {
 };
 NAV_RELPOSNED UBXRelPosNED;
 
-
+#if useWiFi
 #include <AsyncUDP.h>
 #include <WiFiSTA.h>
 #include <WiFiServer.h>
@@ -264,6 +266,7 @@ AsyncUDP udpRoof;
 AsyncUDP udpNtrip;
 WiFiServer server(80);
 WiFiClient client_page;
+#endif
 
 // SETUP ------------------------------------------------------------------------------------------
 
@@ -284,6 +287,12 @@ void setup()
 
     if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }
 
+#if !useWiFi
+    GPSSet.DataTransVia = 0;//set data via USB
+#endif
+
+
+#if useWiFi
     restoreEEprom();
     delay(10);
 
@@ -314,6 +323,7 @@ void setup()
     }
     delay(100);
     server.begin();
+#endif
 }
 
 // MAIN loop  -------------------------------------------------------------------------------------------
@@ -388,6 +398,7 @@ void loop()
 		}
 	}
 
+#if useWiFi
 	if (GPSSet.DataTransVia == 1) {//use WiFi
 		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
@@ -410,5 +421,6 @@ void loop()
 	}
 
 	doWebInterface();
+#endif
     
 }

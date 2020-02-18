@@ -1,3 +1,4 @@
+#if useWiFi
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
 char HTML_String[24000];
@@ -784,7 +785,7 @@ void make_HTML01() {
     strcat(HTML_String, "Example: Ant dist at tractor 100cm factor 1.2 = 100*1.2= 120cm; 100/1.2 = 83 cm.<br>"); 
     strcat(HTML_String, "If GPS antenna distance is less than 120 and more than 83 heading calcultaion is done.<br>");
     strcat(HTML_String, "Roll calculation is only done, if deviation is less than 1 / 4 of it.<br> <br>");
-    strcat(HTML_String, "<b>factor: 1.1 - 1.99  recommended: 1.2 - 1.3. For new setups use 1.99 to test!</b><br>");
+    strcat(HTML_String, "<b>factor: 1.1 - 1.99  recommended: 1.2 - 1.4. For new setups use 1.99 to test!</b><br>");
     
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
@@ -1301,3 +1302,4 @@ void exhibit(const char* tx, const char* v) {
 	Serial.print(tx);
 	Serial.print(v);
 }
+#endif

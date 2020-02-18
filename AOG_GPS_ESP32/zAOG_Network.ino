@@ -1,3 +1,4 @@
+#if useWiFi
 //---------------------------------------------------------------------
 // start WiFi in Workstation mode = log to existing WiFi
 
@@ -122,3 +123,5 @@ void doUDPNtrip() {
 	}
 
 }
+
+#endif

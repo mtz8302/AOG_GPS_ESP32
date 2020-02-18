@@ -1,3 +1,4 @@
+#if useWiFi
 //--------------------------------------------------------------
 //  EEPROM Data Handling
 //--------------------------------------------------------------
@@ -110,6 +111,10 @@ void EEprom_show_memory() {
 		c2++;
 	}
 }
+
+#endif
+
+
 
 
 //parser for 2x UBX PVT (not only RelPosNED)
