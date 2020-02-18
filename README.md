@@ -5,7 +5,7 @@ Bridge between GPS receiver and AgOpenGPS: transmit GPS Signal via WiFi or USB.
 Works with 1 or 2 UBlox receivers to calculate heading+roll. Corrects position by using roll and filters, depends on GPS signal quality.
 With 1 receiver: filters and transmits position to AOG and NTRIP from AOG to UBlox
 
-for ESP32
+for ESP32 or Arduino Mega
 
 you can use WiFi connection or USB
 
