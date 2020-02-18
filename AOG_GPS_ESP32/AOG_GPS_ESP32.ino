@@ -24,7 +24,7 @@
 //the settings below are written as defalt values and can be reloaded.
 //So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
 
-#define useWiFi 1 //0 disables WiFi = use USB so no debugmessages!! no WiFi should work on Ardiuno mega
+#define HardwarePlatform 0      //0 = runs on ESP32 1 = runs on Arduino Mega
 
 struct set {
     //connection plan:
@@ -46,7 +46,7 @@ struct set {
     byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low#
 
     //WiFi---------------------------------------------------------------------------------------------
-#if useWiFi
+#if HardwarePlatform == 0
     //tractors WiFi
     char ssid[24] = "Fendt_209V";           // WiFi network Client name
     char password[24] = "";                 // WiFi network password//Accesspoint name and password
@@ -146,7 +146,7 @@ double VarProcessSlow = 0.005;//  0,1used, when GPS signal is  weak, no roll no 
 double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
-#if useWiFi
+#if HardwarePlatform == 0
 //WIFI
 IPAddress IPToAOG(192, 168, 1, 255);//IP address to send UDP data to
 byte myIPEnding = 79;             //ending of IP adress x.x.x.79 
@@ -252,7 +252,7 @@ struct NAV_RELPOSNED {
 };
 NAV_RELPOSNED UBXRelPosNED;
 
-#if useWiFi
+#if HardwarePlatform == 0
 #include <AsyncUDP.h>
 #include <WiFiSTA.h>
 #include <WiFiServer.h>
@@ -287,12 +287,12 @@ void setup()
 
     if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }
 
-#if !useWiFi
+#if HardwarePlatform == 1
     GPSSet.DataTransVia = 0;//set data via USB
 #endif
 
 
-#if useWiFi
+#if HardwarePlatform == 0
     restoreEEprom();
     delay(10);
 
@@ -398,7 +398,7 @@ void loop()
 		}
 	}
 
-#if useWiFi
+#if HardwarePlatform == 0
 	if (GPSSet.DataTransVia == 1) {//use WiFi
 		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 

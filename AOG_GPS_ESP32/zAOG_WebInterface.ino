@@ -1,4 +1,4 @@
-#if useWiFi
+#if HardwarePlatform == 0
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
 char HTML_String[24000];

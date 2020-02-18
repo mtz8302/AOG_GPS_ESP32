@@ -1,4 +1,4 @@
-#if useWiFi
+#if HardwarePlatform == 0
 //---------------------------------------------------------------------
 // start WiFi in Workstation mode = log to existing WiFi
 
