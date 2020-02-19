@@ -4,7 +4,7 @@
 //--------------------------------------------------------------
 #define EEPROM_SIZE 512
 #define EE_ident1 0xED  // Marker Byte 0 + 1
-#define EE_ident2 0x50
+#define EE_ident2 0x40
 
 
 //--------------------------------------------------------------
@@ -835,8 +835,8 @@ if (UBXTimeFit) {
 
 				rollPresent = true;
 				if (GPSSet.debugmodeHeading) {
-					Serial.print("GPS Höhe 1 (mm): "); Serial.print(UBXPVT1[UBXIdx1].hMSL);
-					Serial.print(" GPS Höhe 2 (mm): "); Serial.println(UBXPVT2[UBXIdx2].hMSL);
+					Serial.print("GPS HÃ¶he 1 (mm): "); Serial.print(UBXPVT1[UBXIdx1].hMSL);
+					Serial.print(" GPS HÃ¶he 2 (mm): "); Serial.println(UBXPVT2[UBXIdx2].hMSL);
 					Serial.print(" Antenna dist (cm): "); Serial.print(GPSSet.AntDist, 1);
 					Serial.print(" Antenna hight (cm): "); Serial.print(GPSSet.AntHight, 1);
 					Serial.print("Roll from GPS: "); Serial.println(roll, 4);
