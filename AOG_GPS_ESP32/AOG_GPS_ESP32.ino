@@ -24,7 +24,7 @@
 //the settings below are written as defalt values and can be reloaded.
 //So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
 
-#define HardwarePlatform 0      //0 = runs on ESP32 1 = runs on Arduino Mega
+#define HardwarePlatform 0      //0 = runs on ESP32, 1 = runs on Arduino Mega
 
 struct set {
     //connection plan:
@@ -278,11 +278,18 @@ void setup()
 	//start serials
     Serial.begin(115200);
     delay(50);
+#if HardwarePlatform == 0
     Serial1.begin(115200, SERIAL_8N1, GPSSet.RX1, GPSSet.TX1);
     delay(10);
     Serial2.begin(115200, SERIAL_8N1, GPSSet.RX2, GPSSet.TX2);
     delay(10);
-
+#endif
+#if HardwarePlatform == 1
+    Serial1.begin(115200);
+    delay(10);
+    Serial2.begin(115200);
+    delay(10);
+#endif
     Serial.println();//new line
 
     if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }

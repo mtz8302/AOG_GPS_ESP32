@@ -188,7 +188,9 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = Sign;
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
-	OGIBuffer[OGIdigit++] = UBXPVT1[UBXRingCount1].fixType + 48;//fix type
+	//fix type
+	if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { OGIBuffer[OGIdigit++] = 52; }//4 = RTK
+	else { OGIBuffer[OGIdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	byte temp = UBXPVT1[UBXRingCount1].numSV;//number of satellites
@@ -507,7 +509,9 @@ void buildGGA() {
 	GGABuffer[GGAdigit++] = Sign;
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
-	GGABuffer[GGAdigit++] = UBXPVT1[UBXRingCount1].fixType + 48;//fix type
+	//fix type
+	if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { OGIBuffer[OGIdigit++] = 52; }//4 = RTK
+	else { OGIBuffer[OGIdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	byte temp = UBXPVT1[UBXRingCount1].numSV;//number of satellites
