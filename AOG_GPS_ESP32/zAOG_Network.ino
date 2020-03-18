@@ -2,78 +2,84 @@
 //---------------------------------------------------------------------
 // start WiFi in Workstation mode = log to existing WiFi
 
+// WIFI handling 15. Maerz 2020 for ESP32  -------------------------------------------
+
 void WiFi_Start_STA() {
-  unsigned long timeout;
+    unsigned long timeout, timeout2;
+    WiFi.mode(WIFI_STA);   //  Workstation
+    Serial.print("try to connect to WiFi: "); Serial.println(GPSSet.ssid);
+    WiFi.begin(GPSSet.ssid, GPSSet.password);
+    timeout = millis() + (GPSSet.timeoutRouter * 1000);
+    timeout2 = timeout - (GPSSet.timeoutRouter * 500);
+    while (WiFi.status() != WL_CONNECTED && millis() < timeout) {
+        delay(300);
+        Serial.print(".");
+        if ((millis() > timeout2) && (WiFi.status() != WL_CONNECTED)) { 
+            WiFi.disconnect();
+            delay(200);
+            WiFi.begin(GPSSet.ssid, GPSSet.password);
+            timeout2 = timeout + 100;
+        }
+        //WIFI LED blink in double time while connecting
+        if (!LED_WIFI_ON) {
+            if (millis() > (LED_WIFI_time + (LED_WIFI_pause >> 2)))
+            {
+                LED_WIFI_time = millis();
+                LED_WIFI_ON = true;
+                digitalWrite(GPSSet.LEDWiFi_PIN, !GPSSet.LEDWiFi_ON_Level);
+            }
+        }
+        if (LED_WIFI_ON) {
+            if (millis() > (LED_WIFI_time + (LED_WIFI_pulse >> 2))) {
+                LED_WIFI_time = millis();
+                LED_WIFI_ON = false;
+                digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level);
+            }
+        }
+    }  //connected or timeout  
 
-  WiFi.mode(WIFI_STA);   //  Workstation
-  
-  /*if (!WiFi.config(GPSSet.myIP, GPSSet.gwIP, GPSSet.mask, GPSSet.myDNS))
-    {Serial.println("STA Failed to configure\n"); }
-    else { Serial.println("trying to connect to WiFi"); }
-  */
-  WiFi.begin(GPSSet.ssid, GPSSet.password);
-  timeout = millis() + (GPSSet.timeoutRouter * 1000);
-  Serial.print("try to connect to WiFi: "); Serial.println(GPSSet.ssid);
-  Serial.print("trying for max seconds: "); Serial.println(GPSSet.timeoutRouter);
-  while (WiFi.status() != WL_CONNECTED && millis() < timeout) {
-    delay(250);
-    Serial.print(".");
-    //WIFI LED blink in double time while connecting
-    if (!LED_WIFI_ON) {
-        if (millis() > (LED_WIFI_time + (LED_WIFI_pause >> 2))) 
-          {
-           LED_WIFI_time = millis();
-           LED_WIFI_ON = true;
-           digitalWrite(GPSSet.LED_PIN_WIFI, !GPSSet.WIFI_LED_ON);
-          }
+    Serial.println(""); //NL  
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        delay(200);
+        Serial.println();
+        Serial.print("WiFi Client successfully connected to : ");
+        Serial.println(GPSSet.ssid);
+        Serial.print("Connected IP - Address : ");
+        IPAddress myIP = WiFi.localIP();
+        Serial.println(myIP);
+        IPAddress gwIP = WiFi.gatewayIP();
+        //after connecting get IP from router -> change it to x.x.x.IP Ending (from settings)
+        myIP[3] = GPSSet.myIPEnding; //set ESP32 IP to x.x.x.myIP_ending
+        Serial.print("changing IP to: ");
+        Serial.println(myIP);
+        if (!WiFi.config(myIP, gwIP, GPSSet.mask, gwIP)) { Serial.println("STA Failed to configure"); }
+        delay(200);
+        Serial.print("Connected IP - Address : ");
+        myIP = WiFi.localIP();
+        ipDestination = myIP;
+        ipDestination[3] = 255;
+        Serial.println(myIP);
+        Serial.print("Gateway IP - Address : ");
+        Serial.println(gwIP);
+        GPSSet.ipDestination[0] = myIP[0];
+        GPSSet.ipDestination[1] = myIP[1];
+        GPSSet.ipDestination[2] = myIP[2];
+        GPSSet.ipDestination[3] = 255;//set IP to x.x.x.255 according to actual network
+        LED_WIFI_ON = true;
+        digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level);
+        my_WiFi_Mode = 1;// WIFI_STA;
     }
-    if (LED_WIFI_ON) {
-      if (millis() > (LED_WIFI_time + (LED_WIFI_pulse >> 2))) {
-        LED_WIFI_time = millis();
+    else
+    {
+        // WiFi.end();
+        Serial.println("WLAN-Client-Connection failed");
+        Serial.println();
         LED_WIFI_ON = false;
-        digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON);
-      }
+        digitalWrite(GPSSet.LEDWiFi_PIN, !GPSSet.LEDWiFi_ON_Level);
     }
-  }  //connected or timeout  
-  
-  Serial.println(""); //NL
-  if (WiFi.status() == WL_CONNECTED)
-  {
-      delay(200);
-      Serial.print("Connected IP - Address : ");
-      IPAddress myIP = WiFi.localIP();
-      Serial.println(myIP);
-      myIP[3] = myIPEnding; //set ESP32 IP to x.x.x.myIP_ending
-      Serial.print("changing IP to: ");
-      Serial.println(myIP);
-      IPAddress gwIP = WiFi.gatewayIP();
-      if (!WiFi.config(myIP, gwIP, GPSSet.mask, GPSSet.myDNS))
-      {
-          Serial.println("STA Failed to configure");
-      }
-      delay(300);
-      Serial.print("WiFi Client successfully connected to : ");
-      Serial.println(GPSSet.ssid);
-      Serial.print("Connected IP - Address : ");
-      myIP = WiFi.localIP();
-      Serial.println(myIP);
-      IPToAOG = myIP;
-      IPToAOG[3] = 255;//set IP to x.x.x.255 according to actual network
-      LED_WIFI_ON = true;
-      digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON);
-      my_WiFi_Mode = WIFI_STA;
-  }
-  else
-  {
-      WiFi.mode(WIFI_OFF);
-      Serial.println("WLAN-Client-Connection failed");
-      Serial.println();
-      LED_WIFI_ON = false;
-      digitalWrite(GPSSet.LED_PIN_WIFI, !GPSSet.WIFI_LED_ON);
-  }
-  delay(20);
+    delay(20);
 }
-
 
 //---------------------------------------------------------------------
 // start WiFi Access Point = only if no existing WiFi
@@ -87,20 +93,20 @@ void WiFi_Start_AP() {
     Serial.print(".");
    }   
   delay(100);//right IP adress only with this delay 
-  WiFi.softAPConfig(GPSSet.gwIP, GPSSet.gwIP, GPSSet.mask);  // set fix IP for AP  
-
-  IPAddress getmyIP = WiFi.softAPIP();
+  WiFi.softAPConfig(GPSSet.gwip, GPSSet.gwip, GPSSet.mask);  // set fix IP for AP  
   delay(300);
-  //server.begin();
-  //delay(300);
+  IPAddress myIP = WiFi.softAPIP();
+  delay(300);
 
   //AP_time = millis();
   Serial.print("Accesspoint started - Name : ");
   Serial.println(GPSSet.ssid_ap);
   Serial.print( " IP address: ");
-  Serial.println(getmyIP);
+  ipDestination = myIP;
+  Serial.println(ipDestination);
+  ipDestination[3] = 255;
   LED_WIFI_ON = true;
-  digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON);
+  digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level);
   my_WiFi_Mode = WIFI_AP;
 }
 
@@ -125,3 +131,30 @@ void doUDPNtrip() {
 }
 
 #endif
+
+//-------------------------------------------------------------------------------------------------
+/* from autosteer code, not for async udp
+void UDP_Start()
+{
+    if (UDPToAOG.begin(steerSet.portMy))
+    {
+        Serial.print("UDP sendig to IP: ");
+        for (byte n = 0; n < 4; n++) {
+            Serial.print(steerSet.ipDestination[n]);
+            Serial.print(".");
+        }
+        Serial.print(" from port: ");
+        Serial.print(steerSet.portMy);
+        Serial.print(" to port: ");
+        Serial.println(steerSet.portDestination);
+    }
+    delay(300);
+    if (UDPFromAOG.begin(steerSet.portAOG))
+    {
+        Serial.print("UDP listening for AOG data on IP: ");
+        Serial.println(WiFi.localIP());
+        Serial.print(" on port: ");
+        Serial.println(steerSet.portAOG);
+        getDataFromAOG();
+    }
+}*/

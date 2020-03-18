@@ -42,8 +42,8 @@ struct set {
     byte RX2 = 25;              //left F9P TX1 Heading
     byte TX2 = 17;              //left F9P RX1 Heading
 
-    byte LED_PIN_WIFI = 2;      // WiFi Status LED 0 = off
-    byte WIFI_LED_ON = HIGH;    //HIGH = LED on high, LOW = LED on low#
+    byte LEDWiFi_PIN = 2;      // WiFi Status LED 0 = off
+    byte LEDWiFi_ON_Level = HIGH;    //HIGH = LED on high, LOW = LED on low#
 
     //WiFi---------------------------------------------------------------------------------------------
 #if HardwarePlatform == 0
@@ -52,13 +52,15 @@ struct set {
     char password[24] = "";                 // WiFi network password//Accesspoint name and password
 
     char ssid_ap[24] = "GPS_unit_ESP_Net";  // name of Access point, if no WiFi found, NO password!!
-    int timeoutRouter = 120;                //time (s) to search for existing WiFi, than starting Accesspoint 
+    int timeoutRouter = 90;                //time (s) to search for existing WiFi, than starting Accesspoint 
 
     //static IP
-    byte myIP[4] = { 192, 168, 1, 79 };     // Roofcontrol module 
-    byte gwIP[4] = { 192, 168, 1, 1 };      // Gateway IP also used if Accesspoint created
+    byte myip[4] = { 192, 168, 1, 79 };     // Roofcontrol module 
+    byte gwip[4] = { 192, 168, 1, 1 };      // Gateway IP also used if Accesspoint created
     byte mask[4] = { 255, 255, 255, 0 };
     byte myDNS[4] = { 8, 8, 8, 8 };         //optional
+    byte ipDestination[4] = { 192, 168, 1, 255 };//IP address to send UDP data to
+    byte myIPEnding = 79;             //ending of IP adress x.x.x.79 
 
     unsigned int portMy = 5544;             //this is port of this module: Autosteer = 5577 IMU = 5566 GPS = 
     unsigned int portAOG = 8888;            //port to listen for AOG
@@ -70,7 +72,7 @@ struct set {
     double AntDist = 74.0;                //cm distance between Antennas
     double AntHight = 228.0;              //cm hight of Antenna
     double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
-    double virtAntForew = 0.0;            //cm to move virtual Antenna foreward
+    double virtAntForew = 100.0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
     double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
@@ -79,6 +81,8 @@ struct set {
    
     byte GPSPosCorrByRoll = 1;            // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     double rollAngleCorrection = 0.0; 
+
+    byte useMixedHeading = 1;             // 0 = off, 1 = uses mix of VTG heading (1 Antenna) and RelPosNED (dual Antenna) if signal is low
    
     byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
 
@@ -94,6 +98,7 @@ struct set {
     bool debugmodeHeading = false;
     bool debugmodeVirtAnt = false;
     bool debugmodeFilterPos = false;
+    bool debugmodeRAW = true;
 
 }; set GPSSet;
 
@@ -108,8 +113,7 @@ unsigned int LED_WIFI_time = 0;
 unsigned int LED_WIFI_pulse = 1400;   //light on in ms 
 unsigned int LED_WIFI_pause = 700;   //light off in ms
 boolean LED_WIFI_ON = false;
-unsigned long Ntrip_data_time = 0;
-
+unsigned long NtripDataTime = 0, now = 0;
 
 
 
@@ -139,27 +143,28 @@ double lonP = 1.0;
 double lonVar = 0.1; // variance, smaller, more faster filtering
 double lonVarProcess = 0.3;// replaced by fast/slow depending on GPS quality
 
-double VarProcessVeryFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessVeryFast = 0.4;//  used, when GPS signal is weak, no roll, but heading OK
 double VarProcessFast = 0.2;//  used, when GPS signal is weak, no roll, but heading OK
 double VarProcessMedi = 0.1;//0,2  used, when GPS signal is  weak, no roll no heading
 double VarProcessSlow = 0.005;//  0,1used, when GPS signal is  weak, no roll no heading
 double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
+double HeadingQuotaVTG = 0, HeadingQuotaRelPosNED = 0.2;
+
 #if HardwarePlatform == 0
 //WIFI
-IPAddress IPToAOG(192, 168, 1, 255);//IP address to send UDP data to
-byte myIPEnding = 79;             //ending of IP adress x.x.x.79 
+IPAddress ipDestination; //set in network.ino
 byte my_WiFi_Mode = 0;  // WIFI_STA = 1 = Workstation  WIFI_AP = 2  = Accesspoint
 #endif
 
 //UBX
-byte UBXRingCount1 = 0, UBXDigit1 = 0, UBXDigit2 = 0, OGIfromUBX = 0;
+byte UBXRingCount1 = 0, UBXRingCount2 = 0, UBXDigit1 = 0, UBXDigit2 = 0, OGIfromUBX = 0;
 short UBXLenght1 = 100, UBXLenght2 = 100;
 constexpr unsigned char UBX_HEADER[] = { 0xB5, 0x62 };//all UBX start with this
 bool isUBXPVT1 = false,  isUBXRelPosNED = false, existsUBXRelPosNED = false;
 
-unsigned long NtripDataTime = 0, now = 0;
+
 double virtLat = 0.0, virtLon = 0.0;//virtual Antenna Position
 
 //NMEA
@@ -168,9 +173,8 @@ bool newOGI = false, newHDT = false, newGGA = false, newVTG = false;
 byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
-constexpr byte GPSHeadingArraySize = 3;
-double GPSHeading[GPSHeadingArraySize], headingVTG = 0;
-byte headRingCount = 0, noRollCount = 0, noHeadingCount = 0, drivDirect = 0;
+double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1;
+byte noRollCount = 0, noHeadingCount = 0, noHeadingCountMax = 30, drivDirect = 0;
 constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
 double roll = 0.0;
@@ -250,7 +254,7 @@ struct NAV_RELPOSNED {
     unsigned char CK0;
     unsigned char CK1;
 };
-NAV_RELPOSNED UBXRelPosNED;
+NAV_RELPOSNED UBXRelPosNED[sizeOfUBXArray];
 
 #if HardwarePlatform == 0
 #include <AsyncUDP.h>
@@ -292,7 +296,7 @@ void setup()
 #endif
     Serial.println();//new line
 
-    if (GPSSet.LED_PIN_WIFI != 0) { pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); }
+    if (GPSSet.LEDWiFi_PIN != 0) { pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); }
 
 #if HardwarePlatform == 1
     GPSSet.DataTransVia = 0;//set data via USB
@@ -322,14 +326,15 @@ void setup()
     if (udpRoof.listen(GPSSet.portMy))
     {
         Serial.print("UDP writing to IP: ");
-        Serial.println(IPToAOG); 
+        Serial.println(ipDestination);
         Serial.print("UDP writing to port: ");
         Serial.println(GPSSet.portDestination);
         Serial.print("UDP writing from port: ");
         Serial.println(GPSSet.portMy);
     }
-    delay(100);
+    delay(200);
     server.begin();
+    delay(50);
 #endif
 }
 
@@ -342,21 +347,21 @@ void loop()
 	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
 	{//Serial.println("new UBX to process");
 		headingRollCalc();
-		if (dualGPSHeadingPresent) {
-			//virtual Antenna point?
-			if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
-				((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
-			{//all data there
-				virtualAntennaPoint();
-			}
+        if (dualGPSHeadingPresent) {
+            //virtual Antenna point?
+            if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
+                ((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
+            {//all data there
+                virtualAntennaPoint();
+            }
 
-      filterPosition();//runs allways to fill kalman variables, decide in NMEA buildXXX if filtered position is used
+            filterPosition();//runs allways to fill kalman variables, decide in NMEA buildXXX if filtered position is used
 
-			if (GPSSet.sendGGA) { buildGGA(); }
-			if (GPSSet.sendVTG) { buildVTG(); }
-			if (GPSSet.sendHDT) { buildHDT(); }
-			buildOGI();//should be build anyway, to decide if new data came in
-		}
+            if (GPSSet.sendGGA) { buildGGA(); }
+            if (GPSSet.sendVTG) { buildVTG(); }
+            if (GPSSet.sendHDT) { buildHDT(); }
+            buildOGI();//should be build anyway, to decide if new data came in
+        }
 		else //only 1 Antenna: this way
 		{
 			virtAntPosPresent = false;
@@ -364,7 +369,7 @@ void loop()
 				//filter position: set kalman variables
 				//0: no fix 1: GPS only -> filter slow, else filter fast, but filter due to no roll compensation
 			if (UBXPVT1[UBXRingCount1].fixType <= 1) { latVarProcess = VarProcessSlow; lonVarProcess = VarProcessSlow; }
-			else { latVarProcess = VarProcessMedi; lonVarProcess = VarProcessMedi; }
+			else { latVarProcess = VarProcessFast; lonVarProcess = VarProcessFast; }
 
 			filterPosition();
       filterGPSpos = true;
@@ -376,7 +381,7 @@ void loop()
 				if (GPSSet.sendHDT) { buildHDT(); }
 				buildOGI();//should be build anyway, to decide if new data came in
 
-				dualAntNoValue = dualAntNoValueMax;//prevent overflow
+                dualAntNoValue = dualAntNoValueMax + 10;//prevent overflow
 			}
 		}
 	}
@@ -410,22 +415,45 @@ void loop()
 		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
 		if ((newOGI) && (GPSSet.sendOGI == 1)) {
-			udpRoof.writeTo(OGIBuffer, OGIdigit, IPToAOG, GPSSet.portDestination);
+			udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination);
+            if (GPSSet.debugmodeRAW) {
+                Serial.print("millis,"); Serial.print(millis()); Serial.print(",");
+                Serial.print("UBXRingCount1 OGIfromUBX PAOGI,");
+                Serial.print(UBXRingCount1); Serial.print(",");
+                Serial.print(OGIfromUBX); Serial.print(",");
+                for (byte N = 0; N < OGIdigit; N++) {Serial.write(OGIBuffer[N]);}
+            }
 			newOGI = false;
 		}
 		if (newGGA) {
-			udpRoof.writeTo(GGABuffer, GGAdigit, IPToAOG, GPSSet.portDestination);
+			udpRoof.writeTo(GGABuffer, GGAdigit, ipDestination, GPSSet.portDestination);
 			newGGA = false;
 		}
 		if (newVTG) {
-			udpRoof.writeTo(VTGBuffer, VTGdigit, IPToAOG, GPSSet.portDestination);
+			udpRoof.writeTo(VTGBuffer, VTGdigit, ipDestination, GPSSet.portDestination);
 			newVTG = false;
 		}
 		if (newHDT) {
-			udpRoof.writeTo(HDTBuffer, HDTdigit, IPToAOG, GPSSet.portDestination);
+			udpRoof.writeTo(HDTBuffer, HDTdigit, ipDestination, GPSSet.portDestination);
 			newHDT = false;
 		}
 	}
+
+    if ((GPSSet.AOGNtrip == 1) && (GPSSet.LEDWiFi_PIN != 0)) {
+        now = millis();
+        if (now > (NtripDataTime + 3000)) {
+            if ((LED_WIFI_ON) && (now > (LED_WIFI_time + LED_WIFI_pulse))) {
+                digitalWrite(GPSSet.LEDWiFi_PIN, !GPSSet.LEDWiFi_ON_Level);
+                LED_WIFI_ON = false;
+                LED_WIFI_time = millis();
+            }
+            if ((!LED_WIFI_ON) && (now > (LED_WIFI_time + LED_WIFI_pause))){
+                digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level);
+                LED_WIFI_ON = true;
+                LED_WIFI_time = millis();
+            }
+        }
+    }
 
 	doWebInterface();
 #endif
