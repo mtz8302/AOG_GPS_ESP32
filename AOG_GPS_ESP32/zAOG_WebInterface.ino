@@ -18,42 +18,41 @@ int Aufruf_Zaehler = 0;
 #define ACTION_SET_GPIO             14
 #define ACTION_SET_GPSPosCorrByRoll 15
 #define ACTION_SET_RollAngCorr      16
-#define ACTION_SET_AntDist          17
-#define ACTION_SET_VirtAntPoi       18
-#define  ACTION_SET_HeadAngCorr     19
-#define ACTION_SET_AntDistDevFact   20
-#define ACTION_SET_DataTransfVia    21
-#define ACTION_SET_WiFiLEDon        22
+#define ACTION_SET_MixedHeading     17
+#define ACTION_SET_AntDist          18
+#define ACTION_SET_VirtAntPoi       19
+#define  ACTION_SET_HeadAngCorr     20
+#define ACTION_SET_AntDistDevFact   21
+#define ACTION_SET_DataTransfVia    22
+#define ACTION_SET_WiFiLEDon        23
 
 int action;
 
 //-------------------------------------------------------------------------------------------------
+// 11. Maerz 2020
 
 void doWebInterface() {
 
-    char my_char;
-    int htmlPtr = 0;
-    int myIdx;
-    int myIndex;
     unsigned long my_timeout;
-
 
     // Check if a client has connected
     client_page = server.available();
 
     if (!client_page)  return;
 
-    Serial.print("New Client:\n");           // print a message out the serial port
+    Serial.println("New Client:");           // print a message out the serial port
 
     my_timeout = millis() + 250L;
-
-    while (!client_page.available() && (millis() < my_timeout)) delay(10);
+    while (!client_page.available() && (millis() < my_timeout)) { delay(10); }
     delay(10);
     if (millis() > my_timeout)
     {
-        Serial.print("Client connection timeout!\n");
+        Serial.println("Client connection timeout!");
+        client_page.flush();
+        client_page.stop();
         return;
     }
+
     //---------------------------------------------------------------------
     //htmlPtr = 0;
     char c;
@@ -61,6 +60,7 @@ void doWebInterface() {
       //Serial.print("New Client.\n");                   // print a message out the serial port
         String currentLine = "";                // make a String to hold incoming data from the client
         while (client_page.connected()) {       // loop while the client's connected
+            delay(0);
             if (client_page.available()) {        // if there's bytes to read from the client,
                 char c = client_page.read();        // read a byte, then
                 Serial.print(c);                             // print it out the serial monitor
@@ -85,7 +85,6 @@ void doWebInterface() {
                         client_page.print(HTTP_Header);
                         delay(20);
                         send_HTML();
-
                         // break out of the while loop:
                         break;
                     }
@@ -116,6 +115,7 @@ void doWebInterface() {
         Serial.print("   --> Client Disconnected\n");
     }// end if client 
 }
+
 
 //-------------------------------------------------------------------------------------------------
 // Process given values
@@ -288,6 +288,12 @@ void process_Request()
         }
         EEprom_write_all();
     }
+    if (action == ACTION_SET_MixedHeading) {
+        //int temp = Pick_Parameter_Zahl("MixHead=", HTML_String);
+        if (Pick_Parameter_Zahl("MixHead=", HTML_String) == 0) GPSSet.useMixedHeading = 0;
+        if (Pick_Parameter_Zahl("MixHead=", HTML_String) == 1) GPSSet.useMixedHeading = 1;
+        EEprom_write_all();
+    }
     if (action == ACTION_SET_AOGNTRIP) {
         //int temp = Pick_Parameter_Zahl("AOGNTRIP=", HTML_String);
         if (Pick_Parameter_Zahl("AOGNTRIP=", HTML_String) == 0) GPSSet.AOGNtrip = 0;
@@ -365,51 +371,56 @@ void process_Request()
             GPSSet.debugmodeFilterPos = true;
         }
         else { GPSSet.debugmodeFilterPos = false; }//no value back from page = 0
+        tempby = Pick_Parameter_Zahl("debugmRAW=", HTML_String);
+        if (tempby == 1) {
+            GPSSet.debugmodeRAW = true;
+        }
+        else { GPSSet.debugmodeRAW = false; }//no value back from page = 0
         EEprom_write_all();
     }
 
 	if (action == ACTION_SET_WiFiLEDon) {
 		//int temp = Pick_Parameter_Zahl("AOGNTRIP=", HTML_String);
 		if (Pick_Parameter_Zahl("WiFiLEDon=", HTML_String) == 0) {
-			GPSSet.WIFI_LED_ON = 0;
-			if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, 0); }
-			else { digitalWrite(GPSSet.LED_PIN_WIFI, 1); }
+			GPSSet.LEDWiFi_ON_Level = 0;
+			if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, 0); }
+			else { digitalWrite(GPSSet.LEDWiFi_PIN, 1); }
 		}
 		if (Pick_Parameter_Zahl("WiFiLEDon=", HTML_String) == 1) {
-			GPSSet.WIFI_LED_ON = 1;
-			if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, 1); }
-			else { digitalWrite(GPSSet.LED_PIN_WIFI, 0); }
+			GPSSet.LEDWiFi_ON_Level = 1;
+			if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, 1); }
+			else { digitalWrite(GPSSet.LEDWiFi_PIN, 0); }
 		}
 		EEprom_write_all();
 	}
     if (action == ACTION_SET_GPIO) {
         //Serial.println(Pick_Parameter_Zahl("LED=", HTML_String));
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 2) { GPSSet.LED_PIN_WIFI = 2; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 4) { GPSSet.LED_PIN_WIFI = 4; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 5) { GPSSet.LED_PIN_WIFI = 5; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 13) { GPSSet.LED_PIN_WIFI = 13; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 14) { GPSSet.LED_PIN_WIFI = 14; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 15) { GPSSet.LED_PIN_WIFI = 15; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 16) { GPSSet.LED_PIN_WIFI = 16; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 17) { GPSSet.LED_PIN_WIFI = 17; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 18) { GPSSet.LED_PIN_WIFI = 18; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 19) { GPSSet.LED_PIN_WIFI = 19; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 20) { GPSSet.LED_PIN_WIFI = 20; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 21) { GPSSet.LED_PIN_WIFI = 21; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 22) { GPSSet.LED_PIN_WIFI = 22; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 23) { GPSSet.LED_PIN_WIFI = 23; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 24) { GPSSet.LED_PIN_WIFI = 24; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 25) { GPSSet.LED_PIN_WIFI = 25; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 26) { GPSSet.LED_PIN_WIFI = 26; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 27) { GPSSet.LED_PIN_WIFI = 27; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 28) { GPSSet.LED_PIN_WIFI = 28; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 29) { GPSSet.LED_PIN_WIFI = 29; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 30) { GPSSet.LED_PIN_WIFI = 30; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 31) { GPSSet.LED_PIN_WIFI = 31; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 32) { GPSSet.LED_PIN_WIFI = 32; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); } EEprom_write_all(); }
-        if (Pick_Parameter_Zahl("LED=", HTML_String) == 33) { GPSSet.LED_PIN_WIFI = 33; pinMode(GPSSet.LED_PIN_WIFI, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LED_PIN_WIFI, GPSSet.WIFI_LED_ON); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 2) { GPSSet.LEDWiFi_PIN = 2; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 4) { GPSSet.LEDWiFi_PIN = 4; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 5) { GPSSet.LEDWiFi_PIN = 5; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 13) { GPSSet.LEDWiFi_PIN = 13; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 14) { GPSSet.LEDWiFi_PIN = 14; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 15) { GPSSet.LEDWiFi_PIN = 15; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 16) { GPSSet.LEDWiFi_PIN = 16; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 17) { GPSSet.LEDWiFi_PIN = 17; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 18) { GPSSet.LEDWiFi_PIN = 18; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 19) { GPSSet.LEDWiFi_PIN = 19; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 20) { GPSSet.LEDWiFi_PIN = 20; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 21) { GPSSet.LEDWiFi_PIN = 21; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 22) { GPSSet.LEDWiFi_PIN = 22; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 23) { GPSSet.LEDWiFi_PIN = 23; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 24) { GPSSet.LEDWiFi_PIN = 24; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 25) { GPSSet.LEDWiFi_PIN = 25; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 26) { GPSSet.LEDWiFi_PIN = 26; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 27) { GPSSet.LEDWiFi_PIN = 27; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 28) { GPSSet.LEDWiFi_PIN = 28; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 29) { GPSSet.LEDWiFi_PIN = 29; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 30) { GPSSet.LEDWiFi_PIN = 30; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 31) { GPSSet.LEDWiFi_PIN = 31; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 32) { GPSSet.LEDWiFi_PIN = 32; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT); if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); } EEprom_write_all(); }
+        if (Pick_Parameter_Zahl("LED=", HTML_String) == 33) { GPSSet.LEDWiFi_PIN = 33; pinMode(GPSSet.LEDWiFi_PIN, OUTPUT);  if (LED_WIFI_ON) { digitalWrite(GPSSet.LEDWiFi_PIN, GPSSet.LEDWiFi_ON_Level); }EEprom_write_all(); }
         //Serial.println();
-        //Serial.print("set pin for WiFi LED to: "); Serial.println(GPSSet.LED_PIN_WIFI); Serial.println();
+        //Serial.print("set pin for WiFi LED to: "); Serial.println(GPSSet.LEDWiFi_PIN); Serial.println();
         //delay(500);
         if (Pick_Parameter_Zahl("TX1=", HTML_String) == 2) {
             GPSSet.TX1 = 2; 
@@ -776,6 +787,32 @@ void make_HTML01() {
     strcat(HTML_String, "<br><hr>");
 
     //---------------------------------------------------------------------------------------------  
+    // Mixed Heading
+    strcat(HTML_String, "<h2>Mixed Heading</h2>");
+    strcat(HTML_String, "Uses dual GPS heading and heading from position antenna on weak signal.<br><br>");
+    strcat(HTML_String, "<form>");
+    strcat(HTML_String, "<table>");
+    set_colgroup(300, 250, 150, 0, 0);
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"MixHead\" id=\"JZ\" value=\"0\"");
+    if (GPSSet.useMixedHeading == 0)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">OFF</label></td>");
+    strcat(HTML_String, "<td><button style= \"width:120px\" name=\"ACTION\" value=\"");
+    strcati(HTML_String, ACTION_SET_MixedHeading);
+    strcat(HTML_String, "\">Apply and Save</button></td>");
+    strcat(HTML_String, "</tr>");
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"MixHead\" id=\"JZ\" value=\"1\"");
+    if (GPSSet.useMixedHeading == 1)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">ON (default)</label></td></tr>");
+
+    strcat(HTML_String, "</table>");
+    strcat(HTML_String, "</form>");
+    strcat(HTML_String, "<br><hr>");
+
+    //---------------------------------------------------------------------------------------------  
     // heading calc antenna dist deviation + filter postion
     strcat(HTML_String, "<h2>GPS Signal quality check</h2>");        
     strcat(HTML_String,"<b>Max deviation for heading/roll calculation</b><br><br>");
@@ -980,6 +1017,13 @@ void make_HTML01() {
     strcat(HTML_String, "> ");
     strcat(HTML_String, "<label for =\"Part\"> debugmode Filter Position on (position is filtered on weak GPS signal)</label>");
     strcat(HTML_String, "</td></tr>");
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td colspan=\"3\"><input type=\"checkbox\" name=\"debugmRAW\" id = \"Part\" value = \"1\" ");
+    if (GPSSet.debugmodeRAW == 1) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "> ");
+    strcat(HTML_String, "<label for =\"Part\"> debugmode RAW data on (sends lots of data as comma separated values)</label>");
+    strcat(HTML_String, "</td></tr>");
          
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
@@ -995,7 +1039,7 @@ void make_HTML01() {
 
     strcat(HTML_String, "<tr>");
     strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"WiFiLEDon\" id=\"JZ\" value=\"0\"");
-    if (GPSSet.WIFI_LED_ON == 0)strcat(HTML_String, " CHECKED");
+    if (GPSSet.LEDWiFi_ON_Level == 0)strcat(HTML_String, " CHECKED");
     strcat(HTML_String, "><label for=\"JZ\">LOW</label></td>");
     strcat(HTML_String, "<td><button style= \"width:120px\" name=\"ACTION\" value=\"");
     strcati(HTML_String, ACTION_SET_WiFiLEDon);
@@ -1004,7 +1048,7 @@ void make_HTML01() {
 
     strcat(HTML_String, "<tr>");
     strcat(HTML_String, "<td></td><td><input type = \"radio\" name=\"WiFiLEDon\" id=\"JZ\" value=\"1\"");
-    if (GPSSet.WIFI_LED_ON == 1)strcat(HTML_String, " CHECKED");
+    if (GPSSet.LEDWiFi_ON_Level == 1)strcat(HTML_String, " CHECKED");
     strcat(HTML_String, "><label for=\"JZ\">HIGH</label></td></tr>");
 
     strcat(HTML_String, "</table>");
@@ -1082,7 +1126,7 @@ void make_HTML01() {
         strcat(HTML_String, "<td><input type = \"radio\" name=\"LED\" id=\"GPIOLED\" value=\"");
         strcati(HTML_String, i);
         strcat(HTML_String, "\"");
-        if (GPSSet.LED_PIN_WIFI == i) { strcat(HTML_String, " CHECKED"); }
+        if (GPSSet.LEDWiFi_PIN == i) { strcat(HTML_String, " CHECKED"); }
         strcat(HTML_String, "><label for=\"JZ");
         strcati(HTML_String, i);
         strcat(HTML_String, "\">");

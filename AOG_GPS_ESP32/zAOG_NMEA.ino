@@ -43,43 +43,33 @@ VTG          Track made good and ground speed
 *
 $PAOGI
 * * From GGA:
-(1 , 2) 123519 Fix taken at 1219 UTC
-(3 , 4) 4807.038,N Latitude 48 deg 07.038' N
-(5, 6) 01131.000,E Longitude 11 deg 31.000' E
-(7) 1 Fix quality: 0 = invalid
-1 = GPS fix (SPS)
-2 = DGPS fix
-3 = PPS fix
-4 = Real Time Kinematic
-5 = Float RTK
-6 = estimated (dead reckoning) (2.3 feature)
-7 = Manual input mode
-8 = Simulation mode
-(8) 08 Number of satellites being tracked
-(9) 0.9 Horizontal dilution of position
-(10, 11) 545.4,M Altitude, Meters, above mean sea level
-(12) 1.2 time in seconds since last DGPS update
-
-From RMC or VTG:
-(13) 022.4 Speed over the ground in knots
-(14) 054.7,T      True track made good (degrees)
-
-FROM IMU:
-(14) XXX.xx IMU Heading in degrees True
-(15) XXX.xx Roll angle in degrees (positive roll = right leaning - right down, left up)
-(16) XXX.xx Pitch angle in degrees (Positive pitch = nose up)
-(17) XXX.xx Yaw Rate in Degrees / second
-
-(18) GPS roll/heading quality:
-	0 = no roll/heading=no corrected pos 
-	1 = heading OK, no roll 
-	2 = OK, corrected position
-(19) driving Direction
-	0 = not sure / standing still
-	1 = forewards
-	2 = backwards
-
-*CHKSUM
+				
+				$PAOGI
+				(1) 123519 Fix taken at 1219 UTC
+				Roll corrected position
+				(2,3) 4807.038,N Latitude 48 deg 07.038' N
+				(4,5) 01131.000,E Longitude 11 deg 31.000' E
+				(6) 1 Fix quality:
+					0 = invalid
+					1 = GPS fix(SPS)
+					2 = DGPS fix
+					3 = PPS fix
+					4 = Real Time Kinematic
+					5 = Float RTK
+					6 = estimated(dead reckoning)(2.3 feature)
+					7 = Manual input mode
+					8 = Simulation mode
+				(7) Number of satellites being tracked
+				(8) 0.9 Horizontal dilution of position
+				(9) 545.4 Altitude (ALWAYS in Meters, above mean sea level)
+				(10) 1.2 time in seconds since last DGPS update
+				(11) 022.4 Speed over the ground in knots - can be positive or negative
+				FROM AHRS:
+				(12) Heading in degrees
+				(13) Roll angle in degrees(positive roll = right leaning - right down, left up)
+				(14) Pitch angle in degrees(Positive pitch = nose up)
+				(15) Yaw Rate in Degrees / second
+				* CHKSUM
 */
 
 
@@ -222,8 +212,6 @@ void buildOGI() {
 	templng = templng % 100;
 	OGIBuffer[OGIdigit++] = (templng / 10) + 48;
 	OGIBuffer[OGIdigit++] = 0x2C;//,
-	OGIBuffer[OGIdigit++] = 0x4D;//M
-	OGIBuffer[OGIdigit++] = 0x2C;//,
 
     //shoud be age of NTRIP, not included in UBX PVT 
 	OGIBuffer[OGIdigit++] = 0x2C;//,
@@ -246,12 +234,14 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 
-	//remark MTZ8302: in AOG heading is only parsed once?? so one word is less in AOG! in OGI description: VTG heading, IMU heading,
-
 	//GPS dual heading
 	if (dualGPSHeadingPresent) {
-		if (GPSSet.debugmode) { Serial.print("GPS Heading to OGI present: "); Serial.println(GPSHeading[headRingCount]); }
-		double tempGPSHead = GPSHeading[headRingCount];
+		double tempGPSHead;
+		if (GPSSet.useMixedHeading) {
+			if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
+			tempGPSHead = HeadingMix;
+		}
+		else {tempGPSHead = HeadingRelPosNED; }
 		temp = byte(tempGPSHead/100);
 		tempGPSHead = tempGPSHead - temp*100;
 		OGIBuffer[OGIdigit++] = temp + 48;
@@ -266,8 +256,8 @@ void buildOGI() {
 		OGIBuffer[OGIdigit++] = temp + 48;
 	}
 	else {
-		if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(GPSHeading[headRingCount]); }
-		double tempGPSHead = headingVTG;
+		if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
+		double tempGPSHead = HeadingVTG;
 		temp = byte(tempGPSHead / 100);
 		tempGPSHead = tempGPSHead - temp * 100;
 		OGIBuffer[OGIdigit++] = temp + 48;
@@ -284,45 +274,28 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//roll
-	if (rollPresent) {
-		double tempRoll = 0 - roll;
-		if (tempRoll < 0) {
-			OGIBuffer[OGIdigit++] = 0x2D;//-
-			tempRoll *= -1;
-		}
-		temp = byte(tempRoll / 10);
-		tempRoll = tempRoll - temp * 10;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempRoll);
-		tempRoll = tempRoll - temp;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		OGIBuffer[OGIdigit++] = 0x2E;//.
-		temp = byte(tempRoll * 10);
-		OGIBuffer[OGIdigit++] = temp + 48;
+	double tempRoll = 0 - roll;
+	if (tempRoll < 0) {
+		OGIBuffer[OGIdigit++] = 0x2D;//-
+		tempRoll *= -1;
 	}
-
+	temp = byte(tempRoll / 10);
+	tempRoll = tempRoll - temp * 10;
+	OGIBuffer[OGIdigit++] = temp + 48;
+	temp = byte(tempRoll);
+	tempRoll = tempRoll - temp;
+	OGIBuffer[OGIdigit++] = temp + 48;
+	OGIBuffer[OGIdigit++] = 0x2E;//.
+	temp = byte(tempRoll * 10);
+	OGIBuffer[OGIdigit++] = temp + 48;
 	OGIBuffer[OGIdigit++] = 0x2C;//,
+
 	//pitch
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 	//yaw
 	OGIBuffer[OGIdigit++] = 0x2C;//,
-	//angualr velocity
-	OGIBuffer[OGIdigit++] = 0x2C;//,
-//roll/heading valid?
-	if (rollPresent) {
-		OGIBuffer[OGIdigit++] = 50;//2
-	}
-	else {
-		if (dualGPSHeadingPresent) { OGIBuffer[OGIdigit++] = 49; }//1
-		  else {OGIBuffer[OGIdigit++] = 48;}//0
-	}
-	if (GPSSet.debugmodeFilterPos) {
-		Serial.print("GNSSfix Type: "); Serial.print(UBXPVT1[UBXRingCount1].fixType);
-		Serial.print(" roll / heading quality : "); Serial.println(OGIBuffer[OGIdigit - 1] - 48);
-	}
-	OGIBuffer[OGIdigit++] = 0x2C;//,
-	//direction of driving
-	OGIBuffer[OGIdigit++] = drivDirect + 48;
+	//angular velocity
+	//...,
 
 	OGIBuffer[OGIdigit++] = 0x2A;//*
 
@@ -343,16 +316,6 @@ void buildOGI() {
 	
 	OGIfromUBX = UBXRingCount1;
 	newOGI = true;
-
-/*
-	if (debugmode) {
-		Serial.println("build OGI from PVT:");
-		for (byte n = 0; n < OGIdigit; n++) {
-			Serial.print(char(OGIBuffer[n]));
-		}
-		Serial.println();
-	}
-	*/
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -370,8 +333,12 @@ void buildHDT() {
 	HDTBuffer[5] = 0x54;//T
 	HDTBuffer[6] = 0x2C;//,
 	//heading
-	if (GPSSet.debugmode) { Serial.print("GPS Heading to HDT present: "); Serial.println(GPSHeading[headRingCount]); }
-	double tempGPSHead = GPSHeading[headRingCount];
+	double tempGPSHead;
+	if (GPSSet.useMixedHeading) {
+		if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
+		tempGPSHead = HeadingMix;
+	}
+	else { tempGPSHead = HeadingRelPosNED; }
 	tempbyt = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - tempbyt * 100;
 	HDTBuffer[7] = tempbyt + 48;
@@ -510,8 +477,8 @@ void buildGGA() {
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	//fix type
-	if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { OGIBuffer[OGIdigit++] = 52; }//4 = RTK
-	else { OGIBuffer[OGIdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
+	if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { GGABuffer[GGAdigit++] = 52; }//4 = RTK
+	else { GGABuffer[GGAdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	byte temp = UBXPVT1[UBXRingCount1].numSV;//number of satellites
@@ -603,24 +570,29 @@ void buildVTG() {
 	VTGdigit = 7;
 
 	//allways +48 to get ASCII: "0" = 48
-
-	//GPS dual heading
-	if (dualGPSHeadingPresent) {
-		if (GPSSet.debugmode) { Serial.print("GPS Heading to OGI present: "); Serial.println(GPSHeading[headRingCount]); }
-		double tempGPSHead = GPSHeading[headRingCount];
-		tempbyt = byte(tempGPSHead / 100);
-		tempGPSHead = tempGPSHead - tempbyt * 100;
-		VTGBuffer[VTGdigit++] = tempbyt + 48;
-		tempbyt = byte(tempGPSHead / 10);
-		tempGPSHead = tempGPSHead - tempbyt * 10;
-		VTGBuffer[VTGdigit++] = tempbyt + 48;
-		tempbyt = byte(tempGPSHead);
-		tempGPSHead = tempGPSHead - tempbyt;
-		VTGBuffer[VTGdigit++] = tempbyt + 48;
-		VTGBuffer[VTGdigit++] = 0x2E;//.
-		tempbyt = byte(tempGPSHead * 10);
-		VTGBuffer[VTGdigit++] = tempbyt + 48;
+	double tempGPSHead;
+	if (dualGPSHeadingPresent) {		
+		if (GPSSet.useMixedHeading) {
+			if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
+			tempGPSHead = HeadingMix;
+		}
+		else { tempGPSHead = HeadingRelPosNED; }
 	}
+	else{ 
+		tempGPSHead = HeadingVTG;
+	}
+	tempbyt = byte(tempGPSHead / 100);
+	tempGPSHead = tempGPSHead - tempbyt * 100;
+	VTGBuffer[VTGdigit++] = tempbyt + 48;
+	tempbyt = byte(tempGPSHead / 10);
+	tempGPSHead = tempGPSHead - tempbyt * 10;
+	VTGBuffer[VTGdigit++] = tempbyt + 48;
+	tempbyt = byte(tempGPSHead);
+	tempGPSHead = tempGPSHead - tempbyt;
+	VTGBuffer[VTGdigit++] = tempbyt + 48;
+	VTGBuffer[VTGdigit++] = 0x2E;//.
+	tempbyt = byte(tempGPSHead * 10);
+	VTGBuffer[VTGdigit++] = tempbyt + 48;
 	VTGBuffer[VTGdigit++] = 0x2C;//,
 	VTGBuffer[VTGdigit++] = 0x54;//T
 	VTGBuffer[VTGdigit++] = 0x2C;//,
