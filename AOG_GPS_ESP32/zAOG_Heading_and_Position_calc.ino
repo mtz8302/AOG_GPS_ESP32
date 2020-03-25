@@ -33,7 +33,7 @@ void headingRollCalc() {
 								else {
 									//HeadingQuotaVTG = 0.2;
 									//HeadingQuotaRelPosNED = 0.5;
-									HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / 5000;
+									HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(5000);
 									if (HeadingQuotaVTG > 0.85) { HeadingQuotaVTG = 0.85; }//at 14,4km/h use only VTG
 									HeadingRelPosNED = 0.85 - HeadingQuotaVTG;
 								}
@@ -74,7 +74,7 @@ void headingRollCalc() {
 							{
 								//HeadingQuotaVTG = 0.35;
 								//HeadingQuotaRelPosNED = 0.35;
-								HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / 5000;
+								HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(5000);
 								if (HeadingQuotaVTG > 0.7) { HeadingQuotaVTG = 0.7; }//at 14,4km/h use only VTG
 								HeadingRelPosNED = 0.7 - HeadingQuotaVTG;
 							}
