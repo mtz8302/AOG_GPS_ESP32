@@ -90,7 +90,7 @@ void headingRollCalc() {
 						headVarProcess = VarProcessFast; //set Kalman filter
 						headVTGVarProcess = VarProcessMedi; //set Kalman filter
 						rollVarProcess = VarProcessVerySlow; //roll slowly to 0
-						roll = 0.0;
+						roll = roll*0.95;
 						noRollCount++;
 						//start filter GPS pos, set Kalman values
 						if (GPSSet.filterGPSposOnWeakSignal == 1) {
@@ -163,8 +163,8 @@ void headingRollCalc() {
 					}
 
 					roll = rollXe;
-					if (noRollCount < 20) { rollPresent = true; }
-					else { noRollCount = 25; rollPresent = false; }//prevent overflow
+					if (noRollCount < 40) { rollPresent = true; }
+					else { noRollCount = 45; rollPresent = false; }//prevent overflow
 					if (GPSSet.debugmodeHeading) {
 						Serial.print(" roll filtered: "); Serial.println(roll);
 						Serial.print("Antenna distance set: "); Serial.print(GPSSet.AntDist); Serial.print("  Ant. dist from GPS: "); Serial.println(UBXRelPosNED[UBXRingCount2].relPosLength);
