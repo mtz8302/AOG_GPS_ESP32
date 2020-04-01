@@ -112,7 +112,7 @@ void buildOGI() {
 	long Lat = 0;
 	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
 	else { Lat = UBXPVT1[UBXRingCount1].lat; }
-	//if (debugmode) { Serial.print("UBX1 Lat (deg *10^-7): "); Serial.println(Lat); }
+	if (GPSSet.debugmodeRAW) { Serial.print("buildOGI tempLat temLon,"); Serial.print(Lat); Serial.print(",");}
 	//N/S?
 	byte Sign = 0x53;//S
 	if (Lat > 0) {Sign = 0x4E;}//N	
@@ -146,7 +146,7 @@ void buildOGI() {
 	long Lon = 0 ;
 	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
 	else { Lon = UBXPVT1[UBXRingCount1].lon; }
-	//if (debugmode) { Serial.print("UBX1 Lon (deg *10^-7): "); Serial.println(Lon); }
+	if (GPSSet.debugmodeRAW) { Serial.print(Lon); Serial.print(","); }
 	//E/W?
 	if (Lon < 0){Sign = 0x57;}//W
 	else{Sign= 0x45;	}//E
@@ -219,7 +219,9 @@ void buildOGI() {
 	//ground speed knots
 	if (drivDirect == 2) {//backwards, so write "-"
 		OGIBuffer[OGIdigit++] = 0x2D;}
-	long speed1000Knotes = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed);
+	long speed1000Knotes;
+	if (UBXPVT1[UBXRingCount1].gSpeed > 30) { speed1000Knotes = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed); }
+	else speed1000Knotes = 0;//send 0 if slower than 0,1km/h
 	OGIBuffer[OGIdigit++] = (speed1000Knotes / 10000) + 48;
 	speed1000Knotes = speed1000Knotes % 10000;
 	OGIBuffer[OGIdigit++] = (speed1000Knotes / 1000)+48;
@@ -235,42 +237,30 @@ void buildOGI() {
 
 
 	//GPS dual heading
+	double tempGPSHead;
 	if (dualGPSHeadingPresent) {
-		double tempGPSHead;
 		if (GPSSet.useMixedHeading) {
 			if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
 			tempGPSHead = HeadingMix;
 		}
-		else {tempGPSHead = HeadingRelPosNED; }
-		temp = byte(tempGPSHead/100);
-		tempGPSHead = tempGPSHead - temp*100;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempGPSHead / 10);
-		tempGPSHead = tempGPSHead - temp * 10;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempGPSHead);
-		tempGPSHead = tempGPSHead - temp;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		OGIBuffer[OGIdigit++] = 0x2E;//.
-		temp = byte(tempGPSHead*10);
-		OGIBuffer[OGIdigit++] = temp + 48;
+		else { tempGPSHead = HeadingRelPosNED; }
 	}
 	else {
 		if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
-		double tempGPSHead = HeadingVTG;
-		temp = byte(tempGPSHead / 100);
-		tempGPSHead = tempGPSHead - temp * 100;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempGPSHead / 10);
-		tempGPSHead = tempGPSHead - temp * 10;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		temp = byte(tempGPSHead);
-		tempGPSHead = tempGPSHead - temp;
-		OGIBuffer[OGIdigit++] = temp + 48;
-		OGIBuffer[OGIdigit++] = 0x2E;//.
-		temp = byte(tempGPSHead * 10);
-		OGIBuffer[OGIdigit++] = temp + 48;
+		tempGPSHead = HeadingVTG;
 	}
+	temp = byte(tempGPSHead / 100);
+	tempGPSHead = tempGPSHead - temp * 100;
+	OGIBuffer[OGIdigit++] = temp + 48;
+	temp = byte(tempGPSHead / 10);
+	tempGPSHead = tempGPSHead - temp * 10;
+	OGIBuffer[OGIdigit++] = temp + 48;
+	temp = byte(tempGPSHead);
+	tempGPSHead = tempGPSHead - temp;
+	OGIBuffer[OGIdigit++] = temp + 48;
+	OGIBuffer[OGIdigit++] = 0x2E;//.
+	temp = byte(tempGPSHead * 10);
+	OGIBuffer[OGIdigit++] = temp + 48;
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//roll
@@ -407,9 +397,9 @@ void buildGGA() {
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	//lat: xx min min . min/10 .. 4.5 digits
-	long Lat = 0;
-	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
-	else { Lat = UBXPVT1[UBXRingCount1].lat; }
+	long Lat = UBXPVT1[UBXRingCount1].lat;
+//	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
+//	else { Lat = UBXPVT1[UBXRingCount1].lat; }
 	//if (debugmode) { Serial.print("UBX1 Lat (deg *10^-7): "); Serial.println(Lat); }
 	//N/S?
 	byte Sign = 0x53;//S
@@ -441,9 +431,9 @@ void buildGGA() {
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	//lon: xxx min min . min/10 .. 5.5 digits
-	long Lon = 0;
-	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
-	else { Lon = UBXPVT1[UBXRingCount1].lon; }
+	long Lon = UBXPVT1[UBXRingCount1].lon;
+//	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
+//	else { Lon = UBXPVT1[UBXRingCount1].lon; }
 	//if (debugmode) { Serial.print("UBX1 Lon (deg *10^-7): "); Serial.println(Lon); }
 	//E/W?
 	if (Lon < 0) { Sign = 0x57; }//W

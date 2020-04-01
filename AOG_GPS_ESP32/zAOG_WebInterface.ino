@@ -195,10 +195,10 @@ void process_Request()
     }
     if (action == ACTION_SET_VirtAntPoi) {
         int tempint = Pick_Parameter_Zahl("AntRight=", HTML_String); //get interger value
-        if (tempint > 0) {//value transmited
+        if (tempint >= 0) {//value transmited
             GPSSet.virtAntRight = tempint;
         }
-        else {//neg or 0
+        else {//neg
             tempint = Pick_Parameter_Zahl("AntRight=-", HTML_String); //get interger value
             if (tempint >= 0) { GPSSet.virtAntRight = 0 - tempint; }
         }
@@ -209,10 +209,10 @@ void process_Request()
             delay(500);
         }
         tempint = Pick_Parameter_Zahl("AntForew=", HTML_String); //get interger value
-        if (tempint > 0) {//value transmited
+        if (tempint >= 0) {//value transmited
             GPSSet.virtAntForew = tempint;
         }
-        else {//neg or 0
+        else {//neg
             tempint = Pick_Parameter_Zahl("AntForew=-", HTML_String); //get interger value
             if (tempint >= 0) { GPSSet.virtAntForew = 0 - tempint; }
         }
@@ -245,7 +245,7 @@ void process_Request()
         EEprom_write_all();
     }
     if (action == ACTION_SET_HeadAngCorr) {
-        float tempfl = Pick_Parameter_Zahl("HeadAngleCorr=", HTML_String); //get interger value
+        float tempfl = Pick_Parameter_Zahl("HeadAngleCorr=", HTML_String); //get integer value
         //Serial.println(Pick_Parameter_Zahl("RollAngleCorr=", HTML_String));
         char tempstr[20] = "HeadAngleCorr=";
         strcati(tempstr, int(tempfl));
@@ -253,6 +253,10 @@ void process_Request()
         int tempint = Pick_Parameter_Zahl(tempstr, HTML_String);//get .x
         if (tempint > 0) { tempfl += tempint * 0.1; }//dezimal exists
         GPSSet.headingAngleCorrection = tempfl;
+
+        tempint = Pick_Parameter_Zahl("maxHeadChang=", HTML_String); //get integer value
+        if (tempint >= 0) { GPSSet.MaxHeadChangPerSec = tempint; }
+
         if (GPSSet.debugmode) {
             Serial.println();
             Serial.print("HeadAngCorr "); Serial.println(tempfl);
@@ -715,14 +719,14 @@ void make_HTML01() {
 
     //---------------------------------------------------------------------------------------------  
     // heading angle correction 
-    strcat(HTML_String, "<h2>Heading angle correction</h2>");
-    strcat(HTML_String, "Set to 90 if antenna for position is right and other left.<br><br>");
+    strcat(HTML_String, "<h2>Heading angle correction and max heading change</h2>");
+    
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
 
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td></td><td><input type = \"number\"  name = \"HeadAngleCorr\" min = \" 0\" max = \"360\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
+    strcat(HTML_String, "<tr><td colspan=\"3\">Set to 90 if antenna for position is right and other left.</td></tr>");
+    strcat(HTML_String, "<tr><td>Heading angle correction</td><td><input type = \"number\"  name = \"HeadAngleCorr\" min = \" 0\" max = \"360\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
     if (GPSSet.headingAngleCorrection < 10) { strcatf(HTML_String, GPSSet.headingAngleCorrection, 3, 1); }
     else {
         if (GPSSet.headingAngleCorrection < 100) { strcatf(HTML_String, GPSSet.headingAngleCorrection, 4, 1); }
@@ -733,6 +737,18 @@ void make_HTML01() {
     strcati(HTML_String, ACTION_SET_HeadAngCorr);
     strcat(HTML_String, "\">Apply and Save</button></td>");
     strcat(HTML_String, "</tr>");
+
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+
+    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Max heading change per second.</b></td></tr>");
+    strcat(HTML_String,"<tr><td colspan=\"3\">Limits heading change to avoid jumps. No filtering when driving slower than 3,6 km/h</td> </tr>");
+    strcat(HTML_String, "<tr><td>recommended 15-30 deg/s</td><td><input type = \"number\"  name = \"maxHeadChang\" min = \" 2\" max = \"90\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
+    if (GPSSet.MaxHeadChangPerSec < 10) { strcati(HTML_String, GPSSet.MaxHeadChangPerSec); }
+    else {
+        if (GPSSet.MaxHeadChangPerSec < 100) { strcati(HTML_String, GPSSet.MaxHeadChangPerSec); }
+    }
+    strcat(HTML_String, "\"></td></tr>");
+
 
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");

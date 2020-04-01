@@ -71,7 +71,7 @@ struct set {
     //Antennas position
     double AntDist = 74.0;                //cm distance between Antennas
     double AntHight = 228.0;              //cm hight of Antenna
-    double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
+    double virtAntRight = 37.0;           //cm to move virtual Antenna to the right
     double virtAntForew = 40.0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
@@ -82,6 +82,7 @@ struct set {
     byte GPSPosCorrByRoll = 1;            // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     double rollAngleCorrection = 0.0; 
 
+    byte MaxHeadChangPerSec = 25;       // degrees that heading is allowed to change per second
     byte useMixedHeading = 1;             // 0 = off, 1 = uses mix of VTG heading (1 Antenna) and RelPosNED (dual Antenna) if signal is low
    
     byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
@@ -131,7 +132,7 @@ double headVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replac
 double headVTGK, headVTGPc, headVTGG, headVTGXp, headVTGZp, headVTGXe;
 double headVTGP = 1.0;
 double headVTGVar = 0.1; // variance, smaller, more faster filtering
-double headVTGVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
+double headVTGVarProcess = 0.0005;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
 //Kalman filter lat
 double latK, latPc, latG, latXp, latZp, latXe;
 double latP = 1.0;
@@ -145,7 +146,7 @@ double lonVarProcess = 0.3;// replaced by fast/slow depending on GPS quality
 
 double VarProcessVeryFast = 0.5;//  used, when GPS signal is weak, no roll, but heading OK
 double VarProcessFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessMedi = 0.2;//0,2  used, when GPS signal is  weak, no roll no heading
+double VarProcessMedi = 0.1;//0,2  used, when GPS signal is  weak, no roll no heading
 double VarProcessSlow = 0.005;//  0,1used, when GPS signal is  weak, no roll no heading
 double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
@@ -173,7 +174,7 @@ bool newOGI = false, newHDT = false, newGGA = false, newVTG = false;
 byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
-double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1;
+double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1, HeadingDiff = 0, HeadingTemp = 0;
 byte noRollCount = 0, noHeadingCount = 0, noHeadingCountMax = 30, drivDirect = 0;
 constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
@@ -372,7 +373,7 @@ void loop()
 			else { latVarProcess = VarProcessFast; lonVarProcess = VarProcessFast; }
 
 			filterPosition();
-      filterGPSpos = true;
+            filterGPSpos = true;
   
 			if (dualAntNoValue > dualAntNoValueMax) {//no new values exist, so send only pos
 				if ((GPSSet.debugmodeHeading) || (GPSSet.debugmodeVirtAnt)) { Serial.println("no dual Antenna values, no heading/roll, watchdog: send only Pos"); }
@@ -421,6 +422,18 @@ void loop()
                 Serial.print("UBXRingCount1 OGIfromUBX PAOGI,");
                 Serial.print(UBXRingCount1); Serial.print(",");
                 Serial.print(OGIfromUBX); Serial.print(",");
+                Serial.print("DualGPSPres RollPres VirtAntPres DrivDir FilterPos,");
+                Serial.print(dualGPSHeadingPresent); Serial.print(",");
+                Serial.print(rollPresent); Serial.print(",");
+                Serial.print(virtAntPosPresent); Serial.print(",");
+                Serial.print(drivDirect); Serial.print(",");
+                Serial.print(filterGPSpos); Serial.print(",");
+                Serial.print("PVThead RelPosNEDhead,");
+                Serial.print(UBXPVT1[UBXRingCount1].headMot); Serial.print(",");
+                Serial.print(UBXRelPosNED[UBXRingCount2].relPosHeading); Serial.print(",");
+                Serial.print("PVTlat PVTlon,");
+                Serial.print(UBXPVT1[UBXRingCount1].lat); Serial.print(",");
+                Serial.print(UBXPVT1[UBXRingCount1].lon); Serial.print(",");
                 for (byte N = 0; N < OGIdigit; N++) {Serial.write(OGIBuffer[N]);}
             }
 			newOGI = false;
