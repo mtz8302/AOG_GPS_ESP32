@@ -127,18 +127,22 @@ void headingRollCalc() {
 
 					if (((HeadingRelPosNED > (HeadingDiff)) || (HeadingRelPosNED < (360 - HeadingDiff)))) {
 						if (UBXPVT1[UBXRingCount1].gSpeed > 1800) {//faster then 6,5km/h
-							HeadingRelPosNED = constrain(HeadingTemp, (HeadingRelPosNED - (HeadingDiff * 0.5)), (HeadingQuotaRelPosNED + (HeadingDiff * 0.5)));
+							HeadingDiffMin = HeadingRelPosNED - (HeadingDiff * 0.5);
+							HeadingDiffMax = HeadingRelPosNED + (HeadingDiff * 0.5);
+							HeadingRelPosNED = constrain(HeadingTemp, HeadingDiffMin, HeadingDiffMax);
 						}
 						else {
-							if (UBXPVT1[UBXRingCount1].gSpeed > 1000) {//faster then 3,6km/h
-								HeadingRelPosNED = constrain(HeadingTemp, (HeadingRelPosNED - HeadingDiff), (HeadingQuotaRelPosNED + HeadingDiff));
+							if (UBXPVT1[UBXRingCount1].gSpeed > 1300) {//faster then 4,7km/h
+								HeadingDiffMin = HeadingRelPosNED - HeadingDiff;
+								HeadingDiffMax = HeadingRelPosNED + HeadingDiff;
+								HeadingRelPosNED = constrain(HeadingTemp, HeadingDiffMin, HeadingDiffMax);
 							}
 							else {//low speed
-								HeadingQuotaRelPosNED = HeadingTemp;
+								HeadingRelPosNED = HeadingTemp;
 							}
 						}
 					}
-					else { HeadingQuotaRelPosNED = HeadingTemp; }
+					else { HeadingRelPosNED = HeadingTemp; }
 
 					if (GPSSet.debugmodeRAW) {
 						Serial.print(headXe, 4); Serial.print(",");
