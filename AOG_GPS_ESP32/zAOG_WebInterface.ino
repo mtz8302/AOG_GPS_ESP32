@@ -1,7 +1,7 @@
 #if HardwarePlatform == 0
 // Wifi variables & definitions
 #define MAX_PACKAGE_SIZE 2048
-char HTML_String[24000];
+char HTML_String[27000];
 char HTTP_Header[150];
 
 // Allgemeine Variablen
@@ -719,14 +719,14 @@ void make_HTML01() {
 
     //---------------------------------------------------------------------------------------------  
     // heading angle correction 
-    strcat(HTML_String, "<h2>Heading angle correction and max heading change</h2>");
+    strcat(HTML_String, "<h2>Dual heading angle correction/max heading change</h2>");
     
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
 
     strcat(HTML_String, "<tr><td colspan=\"3\">Set to 90 if antenna for position is right and other left.</td></tr>");
-    strcat(HTML_String, "<tr><td>Heading angle correction</td><td><input type = \"number\"  name = \"HeadAngleCorr\" min = \" 0\" max = \"360\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
+    strcat(HTML_String, "<tr><td>Heading angle correction for dual GPS</td><td><input type = \"number\" name = \"HeadAngleCorr\" min = \" 0\" max = \"360\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
     if (GPSSet.headingAngleCorrection < 10) { strcatf(HTML_String, GPSSet.headingAngleCorrection, 3, 1); }
     else {
         if (GPSSet.headingAngleCorrection < 100) { strcatf(HTML_String, GPSSet.headingAngleCorrection, 4, 1); }
@@ -740,9 +740,31 @@ void make_HTML01() {
 
     strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
 
-    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Max heading change per second.</b></td></tr>");
+    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Heading values from dual GPS and position antenna (VTG heading).</td></tr>");
+    strcat(HTML_String, "<td colspan=\"3\">Drive straight, when reloading webpage to get good VTG values.</b></td></tr>");
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+    strcat(HTML_String, "<tr><td>Heading from dual GPS</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
+    if (HeadingRelPosNED < 10) { strcatf(HTML_String, HeadingRelPosNED, 3, 1); }
+    else {
+        if (HeadingRelPosNED < 100) { strcatf(HTML_String, HeadingRelPosNED, 4, 1); }
+        else { strcatf(HTML_String, HeadingRelPosNED, 5, 1); }
+    }
+    strcat(HTML_String, "</b></font></divbox></td></tr>");
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+    strcat(HTML_String, "<tr><td>Heading from VTG</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
+    if (HeadingVTG < 10) { strcatf(HTML_String, HeadingVTG, 3, 1); }
+    else {
+        if (HeadingVTG < 100) { strcatf(HTML_String, HeadingVTG, 4, 1); }
+        else { strcatf(HTML_String, HeadingVTG, 5, 1); }
+    }
+    strcat(HTML_String, "</b></font></divbox></td></tr>");
+
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+
+    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Max heading change per second. Limits dual GPS and VTG heading change.</b></td></tr>");
     strcat(HTML_String,"<tr><td colspan=\"3\">Limits heading change to avoid jumps. No filtering when driving slower than 3,6 km/h</td> </tr>");
-    strcat(HTML_String, "<tr><td>recommended 15-30 deg/s</td><td><input type = \"number\"  name = \"maxHeadChang\" min = \" 2\" max = \"90\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
+    strcat(HTML_String, "<tr><td>recommended 30-50 deg/s</td><td><input type = \"number\"  name = \"maxHeadChang\" min = \" 2\" max = \"90\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
     if (GPSSet.MaxHeadChangPerSec < 10) { strcati(HTML_String, GPSSet.MaxHeadChangPerSec); }
     else {
         if (GPSSet.MaxHeadChangPerSec < 100) { strcati(HTML_String, GPSSet.MaxHeadChangPerSec); }

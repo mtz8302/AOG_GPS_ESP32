@@ -71,7 +71,7 @@ struct set {
     //Antennas position
     double AntDist = 74.0;                //cm distance between Antennas
     double AntHight = 228.0;              //cm hight of Antenna
-    double virtAntRight = 37.0;           //cm to move virtual Antenna to the right
+    double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
     double virtAntForew = 40.0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
@@ -144,10 +144,10 @@ double lonP = 1.0;
 double lonVar = 0.1; // variance, smaller, more faster filtering
 double lonVarProcess = 0.3;// replaced by fast/slow depending on GPS quality
 
-double VarProcessVeryFast = 0.5;//  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessFast = 0.3;//  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessMedi = 0.1;//0,2  used, when GPS signal is  weak, no roll no heading
-double VarProcessSlow = 0.005;//  0,1used, when GPS signal is  weak, no roll no heading
+double VarProcessVeryFast = 0.3;//0,5  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessFast = 0.15;//0,3  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessMedi = 0.08;//0,1  used, when GPS signal is  weak, no roll no heading
+double VarProcessSlow = 0.004;//  0,005used, when GPS signal is  weak, no roll no heading
 double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
@@ -175,7 +175,7 @@ byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
 double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1, HeadingDiff = 0, HeadingDiffMax = 0, HeadingDiffMin = 0, HeadingTemp = 0;
-byte noRollCount = 0, noHeadingCount = 0, noHeadingCountMax = 30, drivDirect = 0;
+byte noRollCount = 0, noHeadingCount = 0, noHeadingCountMax = 20, drivDirect = 0;
 constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
 double roll = 0.0;
@@ -348,43 +348,35 @@ void loop()
 	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
 	{//Serial.println("new UBX to process");
 		headingRollCalc();
-        if (dualGPSHeadingPresent) {
-            //virtual Antenna point?
-            if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
-                ((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
-            {//all data there
-                virtualAntennaPoint();
-            }
-
-            filterPosition();//runs allways to fill kalman variables, decide in NMEA buildXXX if filtered position is used
-
-            if (GPSSet.sendGGA) { buildGGA(); }
-            if (GPSSet.sendVTG) { buildVTG(); }
-            if (GPSSet.sendHDT) { buildHDT(); }
-            buildOGI();//should be build anyway, to decide if new data came in
-        }
-		else //only 1 Antenna: this way
-		{
-			virtAntPosPresent = false;
-			dualAntNoValue++;//watchdog
-				//filter position: set kalman variables
-				//0: no fix 1: GPS only -> filter slow, else filter fast, but filter due to no roll compensation
-			if (UBXPVT1[UBXRingCount1].fixType <= 1) { latVarProcess = VarProcessSlow; lonVarProcess = VarProcessSlow; }
-			else { latVarProcess = VarProcessFast; lonVarProcess = VarProcessFast; }
-
-			filterPosition();
-            filterGPSpos = true;
-  
-			if (dualAntNoValue > dualAntNoValueMax) {//no new values exist, so send only pos
-				if ((GPSSet.debugmodeHeading) || (GPSSet.debugmodeVirtAnt)) { Serial.println("no dual Antenna values, no heading/roll, watchdog: send only Pos"); }
-				if (GPSSet.sendGGA) { buildGGA(); }
-				if (GPSSet.sendVTG) { buildVTG(); }
-				if (GPSSet.sendHDT) { buildHDT(); }
-				buildOGI();//should be build anyway, to decide if new data came in
-
-                dualAntNoValue = dualAntNoValueMax + 10;//prevent overflow
+		if (existsUBXRelPosNED) {
+			//virtual Antenna point?
+			if ((GPSSet.virtAntForew != 0) || (GPSSet.virtAntRight != 0) ||
+				((GPSSet.GPSPosCorrByRoll == 1) && (GPSSet.AntHight > 0)))
+			{//all data there
+				virtualAntennaPoint();
 			}
 		}
+		else //only 1 Antenna
+		{
+			virtAntPosPresent = false;
+			if ((GPSSet.debugmodeHeading) || (GPSSet.debugmodeVirtAnt)) { Serial.println("no dual Antenna values so not virtual Antenna point calc"); }
+		}
+
+		//filter position: set kalman variables
+		//0: no fix 1: GPS only -> filter slow, else filter fast, but filter due to no roll compensation
+		if (UBXPVT1[UBXRingCount1].fixType <= 1) { latVarProcess = VarProcessSlow; lonVarProcess = VarProcessSlow; filterGPSpos = true; }
+		else { if (!dualGPSHeadingPresent) { latVarProcess = VarProcessFast; lonVarProcess = VarProcessFast; filterGPSpos = true; } }
+        //filterGPSPosition might set false an Kalman variables set, if signal is perfect (in void HeadingRollCalc)
+        
+        if (GPSSet.filterGPSposOnWeakSignal == 0) { filterGPSpos = false; }
+		
+        filterPosition();//runs allways to fill kalman variables
+
+		if (GPSSet.sendGGA) { buildGGA(); }
+		if (GPSSet.sendVTG) { buildVTG(); }
+		if (GPSSet.sendHDT) { buildHDT(); }
+		buildOGI();//should be build anyway, to decide if new data came in
+
 	}
 
 	if (GPSSet.DataTransVia == 0) {//use USB
