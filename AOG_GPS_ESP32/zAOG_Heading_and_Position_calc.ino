@@ -319,7 +319,7 @@ void headingRollCalc() {
 
 	//limit HeadingVTG to max heading Change per sec
 	if (UBXPVT1[UBXRingCount1].gSpeed > 5) {//prevent /0
-		HeadingDiff = (double(GPSSet.MaxHeadChangPerSec) * (UBXPVT1[UBXRingCount1].iTOW - UBXPVT1[(UBXRingCount1 + sizeOfUBXArray - 1) % sizeOfUBXArray].iTOW)) / double(UBXPVT1[UBXRingCount1].gSpeed;
+		HeadingDiff = (double(GPSSet.MaxHeadChangPerSec) * (UBXPVT1[UBXRingCount1].iTOW - UBXPVT1[(UBXRingCount1 + sizeOfUBXArray - 1) % sizeOfUBXArray].iTOW)) / double(UBXPVT1[UBXRingCount1].gSpeed);
 	}
 	else { HeadingDiff = 100; }
 
