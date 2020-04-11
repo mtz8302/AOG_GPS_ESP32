@@ -73,7 +73,7 @@ struct set {
     double AntHight = 228.0;              //cm hight of Antenna
     double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
     double virtAntForew = 40.0;            //cm to move virtual Antenna foreward
-    double headingAngleCorrection = 90;
+    double headingAngleCorrection = 91;
 
     double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte checkUBXFlags = 1;               //UBX sending quality flags, when used with RTK sometimes 
@@ -82,7 +82,7 @@ struct set {
     byte GPSPosCorrByRoll = 1;            // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     double rollAngleCorrection = 0.0; 
 
-    byte MaxHeadChangPerSec = 50;         // degrees that heading is allowed to change per second
+    byte MaxHeadChangPerSec = 25;         // degrees that heading is allowed to change per second
     byte useMixedHeading = 1;             // 0 = off, 1 = uses mix of VTG heading (1 Antenna) and RelPosNED (dual Antenna) if signal is low
    
     byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
@@ -132,7 +132,12 @@ double headVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replac
 double headVTGK, headVTGPc, headVTGG, headVTGXp, headVTGZp, headVTGXe;
 double headVTGP = 1.0;
 double headVTGVar = 0.1; // variance, smaller, more faster filtering
-double headVTGVarProcess = 0.0005;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
+double headVTGVarProcess = 0.01;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
+//Kalman filter heading
+double headMixK, headMixPc, headMixG, headMixXp, headMixZp, headMixXe;
+double headMixP = 1.0;
+double headMixVar = 0.1; // variance, smaller, more faster filtering
+double headMixVarProcess = 0.1;// 0.001;//  bigger: faster, less filtering// replaced by fast/slow depending on GPS quality
 //Kalman filter lat
 double latK, latPc, latG, latXp, latZp, latXe;
 double latP = 1.0;
@@ -174,10 +179,11 @@ bool newOGI = false, newHDT = false, newGGA = false, newVTG = false;
 byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
-double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1, HeadingDiff = 0, HeadingDiffMax = 0, HeadingDiffMin = 0, HeadingTemp = 0;
+double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1;
+double HeadingDiff = 0, HeadingDiffMax = 0, HeadingDiffMin = 0, HeadingMixBak = 0, HeadingQualFactor = 0.5;
 byte noRollCount = 0, noHeadingCount = 0, noHeadingCountMax = 20, drivDirect = 0;
 constexpr double PI180 = PI / 180;
-bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false;
+bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false, add360ToRelPosNED = false, add360ToVTG = false;
 double roll = 0.0;
 byte dualAntNoValue = 0, dualAntNoValueMax = 6;// if dual Ant value not valid for xx times, send position without correction/heading/roll
 
