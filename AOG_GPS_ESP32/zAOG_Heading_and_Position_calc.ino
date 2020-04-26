@@ -16,35 +16,41 @@ void headingRollCalc() {
 				{
 					//check if vector lenght between antennas is in range = indicator of heading/roll quality
 
-					dualAntNoValue = 0;//reset watchdog
+					dualAntNoValueCount = 0;//reset watchdog
 
 					if ((UBXRelPosNED[UBXRingCount2].relPosLength > (GPSSet.AntDist / ((GPSSet.AntDistDeviationFactor / 4) + 0.75))) && (UBXRelPosNED[UBXRingCount2].relPosLength < (GPSSet.AntDist * ((GPSSet.AntDistDeviationFactor / 4) + 0.75))))
 					{	//check if vector lenght between antennas is in range = indicator of heading/roll quality							
 						//for roll calc only 1/4 deviation !!
-			//signal perfect: deviation less than 1/4
 
+				//signal perfect: deviation less than 1/4
+						//set filters for heading
 						if (UBXPVT1[UBXRingCount1].gSpeed > 500) //driving at least 1.8km/h
 						{
-
 							headVarProcess = VarProcessFast;  //set Kalman filter
 							headVTGVarProcess = VarProcessMedi; //set Kalman filter
-							if ((drivDirect == 1) && (UBXRelPosNED[UBXRingCount2].relPosHeading <= 1)) {//forewards and relposned fails
-								HeadingQualFactor = 0.4;//0,5
-								HeadingQuotaVTG = 0.3;
-								HeadingQuotaRelPosNED = 0.0;
+							if (drivDirect < 2) {//forewards or unknown
+								if (UBXRelPosNED[UBXRingCount2].relPosHeading > 1) {//RelPosNED ok								
+									HeadingQualFactor = 0.6;//0.7
+									if (GPSSet.useMixedHeading == 1) {
+										HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(10000);//10000  6000   // 24.03.2020
+										if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }//at x km/h use only VTG
+									}
+									else { HeadingQuotaVTG = 0.0; }
+								}
+								else {//RelPosNED fails
+									HeadingQualFactor = 0.4;//0,5
+									HeadingQuotaVTG = 1.0;//0.3
+								}
 							}
-							else { //HeadingQuotaVTG = 0.0; HeadingQuotaRelPosNED = 0.8; }//signal ok or backwards
-								HeadingQualFactor = 0.6;//0.7
-								HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(10000);    // 24.03.2020
-								if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }//at 14,4km/h use only VTG
-								HeadingQuotaRelPosNED = 1.0 - HeadingQuotaVTG;
+							else { //backwards
+								HeadingQualFactor = 0.6;
+								HeadingQuotaVTG = 0.0;
 							}
 						}
 						else {//low speed
 							HeadingQualFactor = 0.4;
 							HeadingQuotaVTG = 0.0;
-							HeadingQuotaRelPosNED = 1.0;//0.6;
-							headVarProcess = VarProcessFast;  //set Kalman filter
+							headVarProcess = VarProcessMedi;  //set Kalman filter
 							headVTGVarProcess = VarProcessSlow; //set Kalman filter
 						}
 
@@ -53,11 +59,11 @@ void headingRollCalc() {
 						{//ant left+right: headingCorrectionAngle 90 or 270
 				//roll		
 							if (((UBXPVT1[UBXRingCount1].gSpeed > 3000) && (abs(UBXRelPosNED[UBXRingCount2].relPosD) < (GPSSet.AntDist * 3)))
-								|| ((UBXPVT1[UBXRingCount1].gSpeed < 3000) && (abs(UBXRelPosNED[UBXRingCount2].relPosD) < (GPSSet.AntDist * 2)))) {//50% = 26.7° max
+								|| ((UBXPVT1[UBXRingCount1].gSpeed <= 3000) && (abs(UBXRelPosNED[UBXRingCount2].relPosD) < (GPSSet.AntDist * 2)))) {//50% = 26.7° max
 								roll = (atan2((double(UBXRelPosNED[UBXRingCount2].relPosD) + (double(UBXRelPosNED[UBXRingCount2].relPosHPD) / 100)), GPSSet.AntDist)) / PI180;
 								roll -= GPSSet.rollAngleCorrection;
 								noRollCount = 0;
-								rollVarProcess = VarProcessFast; //set Kalman filter
+								rollVarProcess = VarProcessVeryFast; //set Kalman filter fast
 								if (GPSSet.debugmodeHeading) { Serial.print("roll calc: "); Serial.print(roll); }
 							}
 							else {
@@ -71,30 +77,30 @@ void headingRollCalc() {
 					else
 						//signal medium
 					{
-
 						if (UBXPVT1[UBXRingCount1].gSpeed > 500) { //driving at least 1.8km/h
-							if (drivDirect == 1)
+							if (drivDirect < 2)//forewards or unknown
 							{
-								//HeadingQuotaVTG = 0.15;
-								//HeadingQuotaRelPosNED = 0.3;
 								HeadingQualFactor = 0.45;//0,5
-								HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(10000);    // 24.03.2020
-								if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }//at 14,4km/h use only VTG
-								HeadingQuotaRelPosNED = 1.0 - HeadingQuotaVTG;
+								if (GPSSet.useMixedHeading == 1) {
+									HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(5000);//10000    // 24.03.2020
+									if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }//at x km/h use only VTG
+								}
+								else {
+									HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(8000);//10000    // 24.03.2020
+									if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }//at x km/h use only VTG
+								}
 							}
 							else {
 								HeadingQualFactor = 0.5;
 								HeadingQuotaVTG = 0.0;
-								HeadingQuotaRelPosNED = 1.0;// 0.3;
 							}
 						}
 						else {
 							HeadingQualFactor = 0.35;//0,4
-							HeadingQuotaVTG = 0.05;
-							HeadingQuotaRelPosNED = 1.0;// 0.3;
+							HeadingQuotaVTG = 0.0;
 						}
 						headVarProcess = VarProcessFast; //set Kalman filter
-						headVTGVarProcess = VarProcessMedi; //set Kalman filter
+						headVTGVarProcess = VarProcessSlow; //set Kalman filter
 						rollVarProcess = VarProcessVerySlow; //roll slowly to 0  24.03.2020
 						roll = roll * 0.92;
 						noRollCount++;
@@ -146,7 +152,6 @@ void headingRollCalc() {
 					}
 
 					dualGPSHeadingPresent = true;
-					noHeadingCount = 0;
 
 					if (GPSSet.debugmodeHeading) {
 						Serial.print("heading filterd: "); Serial.print(HeadingRelPosNED);
@@ -182,8 +187,12 @@ void headingRollCalc() {
 					}
 				}
 
-				//very poor signal quality, or one antenna: send only position
+				//very poor signal quality, or one antenna
 				else {
+					roll = roll * 0.9;//go slowly to 0
+					dualAntNoValueCount++;
+					if (dualAntNoValueCount < dualAntNoValueMax) { dualGPSHeadingPresent = true; }
+					else {if (dualAntNoValueCount > 200) { dualAntNoValueCount = 220; }					}
 					HeadingQualFactor = 0.4;//45
 					//set Kalman filter for VTG heading
 					if (UBXPVT1[UBXRingCount1].gSpeed > 100) //driving at least 0.36km/h
@@ -194,17 +203,10 @@ void headingRollCalc() {
 						else { headVTGVarProcess = VarProcessVerySlow * 0.1; }
 					else { headVTGVarProcess = VarProcessVerySlow * 0.001; }
 
-					noHeadingCount++;
-					if (noHeadingCount < noHeadingCountMax) { //use last heading 30x to calc virt position to avoid jumps
-						dualGPSHeadingPresent = true;
-						HeadingQuotaRelPosNED = 0.3;// 0.1;
-						HeadingQuotaVTG = 0.3;
-					}
-					else {
-						HeadingQuotaRelPosNED = 0.0;
-						HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(1200);
-						if (HeadingQuotaVTG > 0.6) { HeadingQuotaVTG = 0.6; }//at 2,6km/h use 0,6
-					}
+
+					HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(3000);
+					if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }
+
 					if (GPSSet.filterGPSposOnWeakSignal == 1) {
 						filterGPSpos = true;
 						latVarProcess = VarProcessFast; //set Kalman filter
@@ -215,16 +217,17 @@ void headingRollCalc() {
 						Serial.println("poor quality of GPS signal, or only 1 Antenna: NO heading/roll calc");
 						Serial.print("Antenna distance set: "); Serial.print(GPSSet.AntDist); Serial.print("  Ant. dist from GPS: "); Serial.println(UBXRelPosNED[UBXRingCount2].relPosLength);
 					}
+					if (GPSSet.debugmodeRAW) { Serial.print(",,,,,,,,,,,,,"); }
 				}
 			}
 
 			//do this, if GNSFix is OK:
 
-				//HeadingVTG Kalman filter go to cos for filtering to avoid 360-0° jump
-				//cosHeadVTG = cos((HeadingVTG * 0.6) + (UBXPVT1[UBXRingCount1].headMot * 0.000004 * PI180));
+			//HeadingVTG Kalman filter go to cos for filtering to avoid 360-0° jump
+			//cosHeadVTG = cos((HeadingVTG * 0.6) + (UBXPVT1[UBXRingCount1].headMot * 0.000004 * PI180));
 			cosHeadVTG = cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180));
 			headVTGK = cosHeadVTG;//input
-			if ((cosHeadVTG > 0.993) || (cosHeadVTG < 0.003)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
+			if (abs(cosHeadVTG > 0.98)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
 			else { headVTGPc = headVTGP + headVTGVarProcess; }
 			headVTGG = headVTGPc / (headVTGPc + headVTGVar);
 			headVTGP = (1 - headVTGG) * headVTGPc;
@@ -235,6 +238,7 @@ void headingRollCalc() {
 			cosHeadVTG = headVTGXe;
 
 			//go back to degree
+			HeadingVTGOld = HeadingVTG;//bak old value for constrain
 			if (UBXPVT1[UBXRingCount1].headMot <= 18000000)
 			{
 				HeadingVTG = acos(headVTGXe) / PI180;
@@ -251,18 +255,18 @@ void headingRollCalc() {
 			}
 
 			//driving direction calcs done here, after HeadingVTG and dual heading was filtered
-			if (dualGPSHeadingPresent) {
-				if (UBXPVT1[UBXRingCount1].gSpeed > 120) {//driving at least 0.43km/h
+			if (dualAntNoValueCount < (dualAntNoValueMax * 3)) {
+				if (UBXPVT1[UBXRingCount1].gSpeed > 100) {//driving at least 0.36 km/h
 					drivDirect = 2;     //set to backwards
-					if (abs(HeadingRelPosNED - HeadingVTG) <= 40) {           // almost same direction = forewards
+					if (abs(HeadingRelPosNED - HeadingVTG) <= 60) {  //40 330 20         // almost same direction = forewards
 						drivDirect = 1;
 					}
 					else {
-						if ((HeadingRelPosNED > 340) && (HeadingVTG < 20)) {
+						if ((HeadingRelPosNED > 305) && (HeadingVTG < 55)) {
 							drivDirect = 1;
 							add360ToVTG = true;
 						}
-						if ((HeadingRelPosNED < 20) && (HeadingVTG > 340)) {
+						if ((HeadingRelPosNED < 55) && (HeadingVTG > 305)) {
 							drivDirect = 1;
 							add360ToRelPosNED = true;
 						}
@@ -275,129 +279,140 @@ void headingRollCalc() {
 			else { drivDirect = 0; }
 			if (GPSSet.debugmodeHeading) {
 				Serial.print("driving direction: "); Serial.println(drivDirect);
-				Serial.print("Heading quota RelPosNED :"); Serial.print(HeadingQuotaRelPosNED);
 				Serial.print("Heading quota VTG :"); Serial.println(HeadingQuotaVTG);
 			}
 
 		}
 		else { if (GPSSet.debugmode) { Serial.println("UBX RelPosNED flag: relative position not valid ->  NO heading + roll calc"); } }
 	}
-	else { //single Antenna or RelPosNED flags bad, caused by rough terrain
+
+//single Antenna
+	else { 
 		HeadingQualFactor = 0.4;//0,5
-		drivDirect = 0;// 0=unknown
+		drivDirect = 0;// 0 = unknown
+		HeadingQuotaVTG = 1.0;
+		//set Kalman filter for VTG heading
+		if (UBXPVT1[UBXRingCount1].gSpeed > 100) //driving at least 0.36km/h
+			if (UBXPVT1[UBXRingCount1].gSpeed > 1000) //driving at least 3.6km/h
+			{
+				headVTGVarProcess = VarProcessSlow;
+			}
+			else { headVTGVarProcess = VarProcessVerySlow; }
+		else { headVTGVarProcess = VarProcessVerySlow * 0.1; }
+
 		//HeadingVTG Kalman filter go to cos for filtering to avoid 360-0° jump
 		cosHeadVTG = cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180));
-		//cosHeadVTG = (cosHeadVTG * 0.4) + (cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180)) * 0.6);
 		headVTGK = cosHeadVTG;//input
-		//if (cosHeadVTG > 0.996) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
-		//else { 
-		headVTGPc = headVTGP + headVTGVarProcess;// }
-		headVTGPc = headVTGP + headVTGVarProcess; //varProcess is set in relation to speed and signal quality
+		if (abs(cosHeadVTG > 0.98)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
+		else { headVTGPc = headVTGP + headVTGVarProcess; }
 		headVTGG = headVTGPc / (headVTGPc + headVTGVar);
 		headVTGP = (1 - headVTGG) * headVTGPc;
 		headVTGXp = headVTGXe;
 		headVTGZp = headVTGXp;
 		headVTGXe = (headVTGG * (headVTGK - headVTGZp)) + headVTGXp;//result
-
 		cosHeadVTG = headVTGXe;
-
 		//go back to degree
+		HeadingVTGOld = HeadingVTG;//bak old value for constrain
 		if (UBXPVT1[UBXRingCount1].headMot <= 18000000)
 		{
 			HeadingVTG = acos(headVTGXe) / PI180;
 		}
 		else { HeadingVTG = double(360.0) - (acos(headVTGXe) / PI180); }
 
-		HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(2000);
-		if (HeadingQuotaVTG > 0.4) { HeadingQuotaVTG = 0.4; }//at 2,8km/h use 0,4
-		HeadingQuotaRelPosNED = 0.0;
+		if (GPSSet.debugmode) { Serial.println("UBX RelPosNED not present (single Antenna), or checksums invalid"); }
+	}//end single antenna
 
-		if (GPSSet.debugmode) { Serial.println("UBX RelPosNED not present (single Antenna) or flag: DGPS fix not valid ->  NO heading + roll calc"); }
-	}
-
-
-
-	//limit HeadingVTG to max heading Change per sec
 	if (UBXPVT1[UBXRingCount1].gSpeed > 5) {//prevent /0
-		HeadingDiff = (double(GPSSet.MaxHeadChangPerSec) * (UBXPVT1[UBXRingCount1].iTOW - UBXPVT1[(UBXRingCount1 + sizeOfUBXArray - 1) % sizeOfUBXArray].iTOW)) / double(UBXPVT1[UBXRingCount1].gSpeed);
+		HeadingDiff = 2.5 + (double(GPSSet.MaxHeadChangPerSec) * (UBXPVT1[UBXRingCount1].iTOW - UBXPVT1[(UBXRingCount1 + sizeOfUBXArray - 1) % sizeOfUBXArray].iTOW)) / (double(UBXPVT1[UBXRingCount1].gSpeed)*0.72);
 	}
-	else { HeadingDiff = 100; }
-
-	if (HeadingDiff < 1.0) { HeadingDiff = 1; }//for high speed
-
-	HeadingDiffMin = HeadingVTG - HeadingDiff;
-	HeadingDiffMax = HeadingVTG + HeadingDiff;
-
-	if (((HeadingVTG > (HeadingDiff)) || (HeadingVTG < (360 - HeadingDiff)))) {
-		HeadingVTG = constrain(HeadingVTG, HeadingDiffMin, HeadingDiffMax);
-		if (GPSSet.debugmodeHeading) {
-			Serial.print("VTGLimits: HeadMin: "); Serial.print(HeadingDiffMin); Serial.print(" HeadMax: ");
-			Serial.print(HeadingDiffMax); Serial.print(" Heading VTG: "); Serial.println(HeadingVTG);
+	else { HeadingDiff = 200; }
+	
+	HeadingMin = HeadingVTGOld - HeadingDiff;
+	HeadingMax = HeadingVTGOld + HeadingDiff;
+	//if ((HeadingVTG > HeadingDiff) && (HeadingVTG < (360 - HeadingDiff)) && (UBXPVT1[UBXRingCount1].gSpeed > 1000)) {
+	if ((HeadingVTG > HeadingDiff) && (HeadingVTG < (360 - HeadingDiff)) && (abs(HeadingVTGOld - HeadingVTG) < 150) && (UBXPVT1[UBXRingCount1].gSpeed > 1000)) {
+		if (GPSSet.debugmodeRAW) {
+			Serial.print("HeadingVTG VTGconstrain,");
+			Serial.print(HeadingVTG); Serial.print(",");
 		}
+		HeadingVTG = constrain(HeadingVTG, HeadingMin, HeadingMax);
+		if (GPSSet.debugmodeHeading) {
+			Serial.print("VTGLimits: HeadMin: "); Serial.print(HeadingMin); Serial.print(" HeadMax: ");
+			Serial.print(HeadingMax); Serial.print(" Heading VTG: "); Serial.println(HeadingVTG);
+		}
+		if (GPSSet.debugmodeRAW) { Serial.print(HeadingVTG); Serial.print(","); }
 	}
+	else { if (GPSSet.debugmodeRAW) { Serial.print("VTG NO constrain, , ,"); } }
+
 
 	HeadingMixBak = HeadingMix;
 
-	if (drivDirect < 2) {//calc HeadingMix with VTG and RelPosNED heading
-		if ((abs(HeadingRelPosNED - HeadingVTG)) <= 20) {
-			HeadingMix = ((HeadingRelPosNED * HeadingQuotaRelPosNED) + (HeadingVTG * (1 - HeadingQuotaRelPosNED)));
-		}
-		else {
-			if (add360ToVTG) {
-				HeadingMix = ((HeadingRelPosNED * HeadingQuotaRelPosNED) + ((HeadingVTG + 360) * (1 - HeadingQuotaRelPosNED)));
+	if (existsUBXRelPosNED) {
+		if (drivDirect < 2) {//calc HeadingMix with VTG and RelPosNED heading
+			if ((abs(HeadingRelPosNED - HeadingVTG)) <= 20) {
+				HeadingMix = ((HeadingRelPosNED * (1.0 - HeadingQuotaVTG)) + (HeadingVTG * HeadingQuotaVTG));
 			}
-			if (add360ToRelPosNED) {
-				HeadingMix = (((HeadingRelPosNED + 360) * HeadingQuotaRelPosNED) + (HeadingVTG * (1 - HeadingQuotaRelPosNED)));
+			else {
+				if (add360ToVTG) {
+					HeadingMix = ((HeadingRelPosNED * (1.0 - HeadingQuotaVTG)) + ((HeadingVTG + 360) * HeadingQuotaVTG));
+				}
+				if (add360ToRelPosNED) {
+					HeadingMix = (((HeadingRelPosNED + 360) * (1.0 - HeadingQuotaVTG)) + (HeadingVTG * HeadingQuotaVTG));
+				}
+			}
+			if (HeadingMix > 360) {
+				HeadingMix -= 360;
 			}
 		}
-		if (HeadingMix > 360) {
-			HeadingMix -= 360;
-		}
+		else { HeadingMix = HeadingRelPosNED; }//backwards
 	}
-	else { HeadingMix = HeadingRelPosNED; }
+	else { HeadingMix = HeadingVTG; }//single Antenna
 
 	if (abs(HeadingMixBak - HeadingMix) <= 20) {   // use old and new HeadingMix values 
-		HeadingMix = ((HeadingMixBak * (double(1) - HeadingQualFactor)) + (HeadingMix * HeadingQualFactor));
+		HeadingMix = (HeadingMixBak * (double(1) - HeadingQualFactor)) + (HeadingMix * HeadingQualFactor);
 	}
 	else {
-		if ((HeadingMixBak > 340) && (HeadingMix < 20)) {
-			HeadingMix += 360;
-		}
-		if ((HeadingMixBak < 20) && (HeadingMix > 340)) {
-			HeadingMixBak += 360;
-		}
+		if ((HeadingMixBak > 340) && (HeadingMix < 20)) {HeadingMix += 360;	}
+		if ((HeadingMixBak < 20) && (HeadingMix > 340)) {HeadingMixBak += 360;}
+
 		HeadingMix = ((HeadingMixBak * (double(1) - HeadingQualFactor)) + (HeadingMix * HeadingQualFactor));
-		if (HeadingMix > 360) {
-			HeadingMix -= 360;
-		}
+
+		if (HeadingMix > 360) {	HeadingMix -= 360;}
 	}
 
 
 	if (GPSSet.debugmodeRAW) {
-		Serial.print("relPosQuota VTGQuota HeadingMixUnLim,");
-		Serial.print(HeadingQuotaRelPosNED); Serial.print(",");
+		Serial.print("VTGQuota HeadQualFac HeadingVTG HeadingRelPos HeadingMixUnLim,");
 		Serial.print(HeadingQuotaVTG); Serial.print(",");
+		Serial.print(HeadingQualFactor); Serial.print(",");
+		Serial.print(HeadingVTG); Serial.print(",");
+		Serial.print(HeadingRelPosNED); Serial.print(",");
 		Serial.print(HeadingMix); Serial.print(",");
 	}
-
-	//limit HeadingMix to max heading Change per sec
-	HeadingDiffMin = HeadingMixBak - HeadingDiff;
-	HeadingDiffMax = HeadingMixBak + HeadingDiff;
-	if ((HeadingMix > HeadingDiffMin) && (HeadingMix < HeadingDiffMax)) {//360 to 0
-		HeadingMix = constrain(HeadingMix, HeadingDiffMin, HeadingDiffMax);
+/*
+	HeadingMin = HeadingMixBak - HeadingDiff;
+	HeadingMax = HeadingMixBak + HeadingDiff;
+	if ((HeadingMixBak > HeadingDiff) && (HeadingMixBak < (360-HeadingDiff))) {//360 to 0
+		HeadingMix = constrain(HeadingMix, HeadingMin, HeadingMax);
 		if (GPSSet.debugmodeHeading) {
-			Serial.print("MixLimits: HeadMin: "); Serial.print(HeadingDiffMin); Serial.print(" HeadMax: ");
-			Serial.print(HeadingDiffMax); Serial.print(" Heading Mix: "); Serial.println(HeadingMix);
+			Serial.print("MixLimits: HeadMin: "); Serial.print(HeadingMin); Serial.print(" HeadMax: ");
+			Serial.print(HeadingMax); Serial.print(" Heading Mix: "); Serial.println(HeadingMix);
 		}
+		if (GPSSet.debugmodeRAW) {Serial.print("constrain used,");}
 	}
+	else { if (GPSSet.debugmodeRAW) { Serial.print("NO constrain,"); } }
+*/
 	if (GPSSet.debugmodeRAW) {
-		Serial.print("headDiffMin HeadDiffMax HeadingMix,");
-		Serial.print(HeadingDiffMin); Serial.print(",");
-		Serial.print(HeadingDiffMax); Serial.print(",");
-		Serial.print(HeadingMix); Serial.print(",");
+	//	Serial.print("headDiffMin HeadDiffMax HeadingMix,");
+	//	Serial.print(HeadingMin); Serial.print(",");
+	//	Serial.print(HeadingMax); Serial.print(",");
+	//	Serial.print(HeadingMix); Serial.print(",");
+		Serial.print("NoRollCount DualAntNoValueCount,");
+		Serial.print(noRollCount); Serial.print(",");
+		Serial.print(dualAntNoValueCount); Serial.print(",");
 	}
-
 }
+
 
 
 //-------------------------------------------------------------------------------------------------
@@ -431,6 +446,7 @@ void virtualAntennaPoint() {
 	}
 	else {
 		toRight = 0 - GPSSet.virtAntRight;
+		if (GPSSet.debugmodeRAW) { Serial.print(",,,,,,"); }
 	}
 
 	if (GPSSet.virtAntForew != 0) {
@@ -484,19 +500,11 @@ void virtualAntennaPoint() {
 			if (headingRad < 0) { headingRad += 360; }
 		}
 		headingRad *= PI180;
-	//	virtLatRadTemp = asin((sin(virtLatRad) * cos(WayByRadius)) + (cos(virtLatRad) * sin(WayByRadius) * cos(headingRad)));
-		//virtLonRad = virtLonRad + atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
-		//virtLatRad = virtLatRadTemp;
 		
 		virtLatRadTemp = asin((sin(virtLatRad) * cos(WayByRadius)) + (cos(virtLatRad) * sin(WayByRadius) * cos(headingRad)));
 		virtLonRad = virtLonRad + atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
 		virtLatRad = virtLatRadTemp;
-
-		//virtLatRad = asin((sin(virtLatRad) * cos(WayByRadius)) + (cos(virtLatRad) * sin(WayByRadius) * cos(headingRad)));
-		//virtLonRad = virtLonRad + asin((sin(WayByRadius) / cos(virtLatRad) * sin(headingRad)));
-
-
-		
+	
 		//radians to dec
 		virtLat = virtLatRad / PI180;
 		virtLon = virtLonRad / PI180;

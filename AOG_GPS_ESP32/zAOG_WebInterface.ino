@@ -763,9 +763,9 @@ void make_HTML01() {
     strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
 
     strcat(HTML_String, "<tr><td colspan=\"3\"><b>Max heading change per second. Limits dual GPS and VTG heading change.</b></td></tr>");
-    strcat(HTML_String,"<tr><td colspan=\"3\">Limits heading change to avoid jumps. Max change (deg/s) at 3,6 km/h.</td> </tr>");
+    strcat(HTML_String,"<tr><td colspan=\"3\">Limits heading change to avoid jumps. Max change (deg/s) at 5 km/h.</td> </tr>");
     strcat(HTML_String, "<tr><td colspan=\"3\">Angle is adjusted to speed: faster -> less change.</td> </tr>");
-    strcat(HTML_String, "<tr><td>recommended 30-50 deg/s</td><td><input type = \"number\"  name = \"maxHeadChang\" min = \" 2\" max = \"90\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
+    strcat(HTML_String, "<tr><td>recommended 30-50 deg/s</td><td><input type = \"number\"  name = \"maxHeadChang\" min = \" 2\" max = \"99\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
     if (GPSSet.MaxHeadChangPerSec < 10) { strcati(HTML_String, GPSSet.MaxHeadChangPerSec); }
     else {
         if (GPSSet.MaxHeadChangPerSec < 100) { strcati(HTML_String, GPSSet.MaxHeadChangPerSec); }
@@ -828,7 +828,8 @@ void make_HTML01() {
     //---------------------------------------------------------------------------------------------  
     // Mixed Heading
     strcat(HTML_String, "<h2>Mixed Heading</h2>");
-    strcat(HTML_String, "Uses dual GPS heading and heading from position antenna on weak signal.<br><br>");
+    strcat(HTML_String, "Uses dual GPS heading and heading from position antenna on weak signal.<br>");
+    strcat(HTML_String, "Moving average filter for heading depending on speed and signal quality.<br><br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);

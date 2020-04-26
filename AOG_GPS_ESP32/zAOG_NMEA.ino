@@ -105,6 +105,11 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = (time / 10) + 48;
 	time = time % 10;
 	OGIBuffer[OGIdigit++] = time + 48;
+	OGIBuffer[OGIdigit++] = 0x2E;//.
+	long timel = UBXPVT1[UBXRingCount1].nano / 1000000;//ms
+	OGIBuffer[OGIdigit++] = (timel / 100) + 48;
+	timel = timel % 100;
+	OGIBuffer[OGIdigit++] = (timel / 10) + 48;
 
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
@@ -238,17 +243,7 @@ void buildOGI() {
 
 	//GPS dual heading
 	double tempGPSHead;
-	if (dualGPSHeadingPresent) {
-		if (GPSSet.useMixedHeading) {
-			if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
-			tempGPSHead = HeadingMix;
-		}
-		else { tempGPSHead = HeadingRelPosNED; }
-	}
-	else {
-		if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
-		tempGPSHead = HeadingVTG;
-	}
+	tempGPSHead = HeadingMix;
 	temp = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - temp * 100;
 	OGIBuffer[OGIdigit++] = temp + 48;
@@ -393,6 +388,11 @@ void buildGGA() {
 	GGABuffer[GGAdigit++] = (time / 10) + 48;
 	time = time % 10;
 	GGABuffer[GGAdigit++] = time + 48;
+	GGABuffer[GGAdigit++] = 0x2E;//.
+	long timel = UBXPVT1[UBXRingCount1].nano / 1000000;//ms
+	GGABuffer[GGAdigit++] = (timel / 100) + 48;
+	timel = timel % 100;
+	GGABuffer[GGAdigit++] = (timel / 10) + 48;
 
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
@@ -561,16 +561,17 @@ void buildVTG() {
 
 	//allways +48 to get ASCII: "0" = 48
 	double tempGPSHead;
-	if (dualGPSHeadingPresent) {		
-		if (GPSSet.useMixedHeading) {
-			if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
-			tempGPSHead = HeadingMix;
+//	if (GPSSet.useMixedHeading) {
+//		if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
+		tempGPSHead = HeadingMix; //decided in Heading calc
+/*	}
+	else {
+		if (dualGPSHeadingPresent) { tempGPSHead = HeadingRelPosNED; }
+		else {
+			if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
+			tempGPSHead = HeadingVTG;
 		}
-		else { tempGPSHead = HeadingRelPosNED; }
-	}
-	else{ 
-		tempGPSHead = HeadingVTG;
-	}
+	}*/
 	tempbyt = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - tempbyt * 100;
 	VTGBuffer[VTGdigit++] = tempbyt + 48;
@@ -592,7 +593,12 @@ void buildVTG() {
 	VTGBuffer[VTGdigit++] = 0x2C;//,
 
 	//ground speed knots
-	long speed1000Knotes = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed);
+	if (drivDirect == 2) {//backwards, so write "-"
+		VTGBuffer[VTGdigit++] = 0x2D;
+	}
+	long speed1000Knotes;
+	if (UBXPVT1[UBXRingCount1].gSpeed > 30) { speed1000Knotes = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed); }
+	else speed1000Knotes = 0;//send 0 if slower than 0,1km/h
 	VTGBuffer[VTGdigit++] = (speed1000Knotes / 10000) + 48;
 	speed1000Knotes = speed1000Knotes % 10000;
 	VTGBuffer[VTGdigit++] = (speed1000Knotes / 1000) + 48;

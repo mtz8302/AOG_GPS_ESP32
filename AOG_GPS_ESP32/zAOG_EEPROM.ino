@@ -4,7 +4,7 @@
 //--------------------------------------------------------------
 #define EEPROM_SIZE 512
 #define EE_ident1 0xED  // Marker Byte 0 + 1
-#define EE_ident2 0x43
+#define EE_ident2 0x42
 
 
 //--------------------------------------------------------------
@@ -810,7 +810,7 @@ if (UBXTimeFit) {
 		}
 
 		dualGPSHeadingPresent = true;
-		dualAntNoValue = 0;//reset watchdog
+		dualAntNoValueCount = 0;//reset watchdog
 
 		if (GPSSet.RollDevice == 1) {
 
@@ -835,8 +835,8 @@ if (UBXTimeFit) {
 
 				rollPresent = true;
 				if (GPSSet.debugmodeHeading) {
-					Serial.print("GPS Höhe 1 (mm): "); Serial.print(UBXPVT1[UBXIdx1].hMSL);
-					Serial.print(" GPS Höhe 2 (mm): "); Serial.println(UBXPVT2[UBXIdx2].hMSL);
+					Serial.print("GPS Hï¿½he 1 (mm): "); Serial.print(UBXPVT1[UBXIdx1].hMSL);
+					Serial.print(" GPS Hï¿½he 2 (mm): "); Serial.println(UBXPVT2[UBXIdx2].hMSL);
 					Serial.print(" Antenna dist (cm): "); Serial.print(GPSSet.AntDist, 1);
 					Serial.print(" Antenna hight (cm): "); Serial.print(GPSSet.AntHight, 1);
 					Serial.print("Roll from GPS: "); Serial.println(roll, 4);
@@ -861,7 +861,7 @@ else {
 	if (debugmode) { Serial.println("UBX present, but satellite time of antennas don't fit: NO heading/roll calc"); }
 	dualGPSHeadingPresent = false;
 	if (GPSSet.RollDevice == 1) { rollPresent = false; }
-	dualAntNoValue++;//increase watchdog
+	dualAntNoValueCount++;//increase watchdog
 }//UBX1+2 time don't fit
 }
 */
@@ -911,4 +911,3 @@ void virtualAntennaPoint() {
 	}
 }
 */
-

@@ -33,7 +33,7 @@ struct set {
     //  TX1----------RX1--------------------------------RTCM in           (NTRIP comming from AOG to get absolute/correct postion
     //  RX2--------------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
     //  TX2--------------------------------RX1----------
-    //               RX2-------------------TX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in both F9P!! = NTRIP for relative positioning)
+    //               RX2-------------------TX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in right F9P = NTRIP for relative positioning)
   
     // IO pins ----------------------------------------------------------------------------------------
     byte RX1 = 27;              //right F9P TX1 GPS pos
@@ -71,9 +71,9 @@ struct set {
     //Antennas position
     double AntDist = 74.0;                //cm distance between Antennas
     double AntHight = 228.0;              //cm hight of Antenna
-    double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
-    double virtAntForew = 40.0;            //cm to move virtual Antenna foreward
-    double headingAngleCorrection = 91;
+    double virtAntRight = 37.0;           //cm to move virtual Antenna to the right
+    double virtAntForew = 60.0;            //cm to move virtual Antenna foreward
+    double headingAngleCorrection = 90;
 
     double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte checkUBXFlags = 1;               //UBX sending quality flags, when used with RTK sometimes 
@@ -82,7 +82,7 @@ struct set {
     byte GPSPosCorrByRoll = 1;            // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     double rollAngleCorrection = 0.0; 
 
-    byte MaxHeadChangPerSec = 25;         // degrees that heading is allowed to change per second
+    byte MaxHeadChangPerSec = 50;         // degrees that heading is allowed to change per second
     byte useMixedHeading = 1;             // 0 = off, 1 = uses mix of VTG heading (1 Antenna) and RelPosNED (dual Antenna) if signal is low
    
     byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
@@ -149,14 +149,14 @@ double lonP = 1.0;
 double lonVar = 0.1; // variance, smaller, more faster filtering
 double lonVarProcess = 0.3;// replaced by fast/slow depending on GPS quality
 
-double VarProcessVeryFast = 0.3;//0,5  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessFast = 0.15;//0,3  used, when GPS signal is weak, no roll, but heading OK
-double VarProcessMedi = 0.08;//0,1  used, when GPS signal is  weak, no roll no heading
-double VarProcessSlow = 0.004;//  0,005used, when GPS signal is  weak, no roll no heading
+double VarProcessVeryFast = 0.2;//0,3  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessFast = 0.08;//0,15  used, when GPS signal is weak, no roll, but heading OK
+double VarProcessMedi = 0.02;//0,08 used, when GPS signal is  weak, no roll no heading
+double VarProcessSlow = 0.001;//  0,004used, when GPS signal is  weak, no roll no heading
 double VarProcessVerySlow = 0.0001;//0,03  used, when GPS signal is  weak, no roll no heading
 bool filterGPSpos = false;
 
-double HeadingQuotaVTG = 0.2, HeadingQuotaRelPosNED = 0.2;
+double HeadingQuotaVTG = 0.5;
 
 #if HardwarePlatform == 0
 //WIFI
@@ -179,13 +179,13 @@ bool newOGI = false, newHDT = false, newGGA = false, newVTG = false;
 byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
 
 //heading + roll
-double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1;
-double HeadingDiff = 0, HeadingDiffMax = 0, HeadingDiffMin = 0, HeadingMixBak = 0, HeadingQualFactor = 0.5;
-byte noRollCount = 0, noHeadingCount = 0, noHeadingCountMax = 20, drivDirect = 0;
+double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, HeadingVTGOld = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1;
+double HeadingDiff = 0, HeadingMax = 0, HeadingMin = 0, HeadingMixBak = 0, HeadingQualFactor = 0.5;
+byte noRollCount = 0,  drivDirect = 0;
 constexpr double PI180 = PI / 180;
 bool dualGPSHeadingPresent = false, rollPresent = false, virtAntPosPresent = false, add360ToRelPosNED = false, add360ToVTG = false;
 double roll = 0.0;
-byte dualAntNoValue = 0, dualAntNoValueMax = 6;// if dual Ant value not valid for xx times, send position without correction/heading/roll
+byte dualAntNoValueCount = 0, dualAntNoValueMax = 20;// if dual Ant value not valid for xx times, send position without correction/heading/roll
 
 
 // Variables ------------------------------
@@ -265,12 +265,16 @@ NAV_RELPOSNED UBXRelPosNED[sizeOfUBXArray];
 
 #if HardwarePlatform == 0
 #include <AsyncUDP.h>
+#include <WiFiUdp.h>//for OTA
 #include <WiFiSTA.h>
 #include <WiFiServer.h>
 #include <WiFiClient.h>
 #include <WiFiAP.h>
 #include <WiFi.h>
 #include <EEPROM.h>
+//#include <ESPmDNS.h>//for OTA
+//#include <ArduinoOTA.h>
+
 
 //instances----------------------------------------------------------------------------------------
 AsyncUDP udpRoof;
@@ -342,13 +346,62 @@ void setup()
     delay(200);
     server.begin();
     delay(50);
+
+
+
+    // Port defaults to 3232
+  // ArduinoOTA.setPort(3232);
+
+  // Hostname defaults to esp3232-[MAC]
+  // ArduinoOTA.setHostname("myesp32");
+
+  // No authentication by default
+  // ArduinoOTA.setPassword("admin");
+
+  // Password can be set with it's md5 value as well
+  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+/*
+    ArduinoOTA
+        .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+            type = "sketch";
+        else // U_SPIFFS
+            type = "filesystem";
+
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        Serial.println("Start updating " + type);
+            })
+        .onEnd([]() {
+                Serial.println("\nEnd");
+            })
+                .onProgress([](unsigned int progress, unsigned int total) {
+                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+                    })
+                .onError([](ota_error_t error) {
+                        Serial.printf("Error[%u]: ", error);
+                        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+                        else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+                        else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+                        else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+                        else if (error == OTA_END_ERROR) Serial.println("End Failed");
+                    });
+
+                    ArduinoOTA.begin();
+
+
+Serial.println("OTA done");*/
 #endif
+
 }
 
 // MAIN loop  -------------------------------------------------------------------------------------------
 
 void loop()
 {
+   // ArduinoOTA.handle();
+
 	getUBX();//read serials    
 
 	if (UBXRingCount1 != OGIfromUBX)//new UXB exists
