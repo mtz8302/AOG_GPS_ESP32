@@ -322,6 +322,12 @@ void headingRollCalc() {
 		if (GPSSet.debugmode) { Serial.println("UBX RelPosNED not present (single Antenna), or checksums invalid"); }
 	}//end single antenna
 
+
+	//roll: filter before sending to AOG, if roll corrected position is send
+	if (GPSSet.GPSPosCorrByRoll) { rollToAOG = (rollToAOG * 0.7) + (roll * 0.3); }
+	else { rollToAOG = roll; }
+
+	//heading
 	if (UBXPVT1[UBXRingCount1].gSpeed > 5) {//prevent /0
 		HeadingDiff = 2.5 + (double(GPSSet.MaxHeadChangPerSec) * (UBXPVT1[UBXRingCount1].iTOW - UBXPVT1[(UBXRingCount1 + sizeOfUBXArray - 1) % sizeOfUBXArray].iTOW)) / (double(UBXPVT1[UBXRingCount1].gSpeed)*0.72);
 	}

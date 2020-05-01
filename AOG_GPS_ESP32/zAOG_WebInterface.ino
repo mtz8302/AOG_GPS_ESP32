@@ -195,32 +195,28 @@ void process_Request()
     }
     if (action == ACTION_SET_VirtAntPoi) {
         int tempint = Pick_Parameter_Zahl("AntRight=", HTML_String); //get interger value
-        if (tempint >= 0) {//value transmited
+        if (tempint > 0) {//value transmited
             GPSSet.virtAntRight = tempint;
         }
         else {//neg
-            tempint = Pick_Parameter_Zahl("AntRight=-", HTML_String); //get interger value
-            if (tempint >= 0) { GPSSet.virtAntRight = 0 - tempint; }
+            tempint = Pick_Parameter_Zahl("AntRight=-", HTML_String); //get interger value            
+            if (tempint >= 0) { tempint *= -1; GPSSet.virtAntRight = tempint; }
+            if (tempint == -1) { GPSSet.virtAntRight = 0; }//not pos, not neg
         }
         if (GPSSet.debugmode) {
             Serial.println();
             Serial.print("AntRight "); Serial.println(tempint);
             Serial.println();
             delay(500);
-        }
+        }           
         tempint = Pick_Parameter_Zahl("AntForew=", HTML_String); //get interger value
-        if (tempint >= 0) {//value transmited
+        if (tempint > 0) {//value transmited
             GPSSet.virtAntForew = tempint;
         }
         else {//neg
-            tempint = Pick_Parameter_Zahl("AntForew=-", HTML_String); //get interger value
-            if (tempint >= 0) { GPSSet.virtAntForew = 0 - tempint; }
-        }
-        if (GPSSet.debugmode) {
-            Serial.println();
-            Serial.print("AntForew "); Serial.println(tempint);
-            Serial.println();
-            delay(500);
+            tempint = Pick_Parameter_Zahl("AntForew=-", HTML_String); //get interger value            
+            if (tempint >= 0) { tempint *= -1; GPSSet.virtAntForew = tempint; }
+            if (tempint == -1) { GPSSet.virtAntForew = 0; }//not pos, not neg
         }
         EEprom_write_all();
     }
@@ -802,6 +798,9 @@ void make_HTML01() {
     //---------------------------------------------------------------------------------------------  
     // GPS position correction by roll 
     strcat(HTML_String, "<h2>Correct GPS position using roll</h2>");
+    strcat(HTML_String, "Roll corrected position is send, it's like moving antenna over the ground.<br>");
+    strcat(HTML_String, "The left and right movement caused by rocking tractor is eliminated.<br>");
+    strcat(HTML_String, "Roll transfered to AOG is more filtered for sidehill draft gain.<br>");
     strcat(HTML_String, "Antennas must be left + right to be able to calculate roll.<br><br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
