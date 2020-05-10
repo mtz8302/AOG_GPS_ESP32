@@ -75,7 +75,7 @@ struct set {
     double virtAntForew = 60.0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
-    double AntDistDeviationFactor = 1.3;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
+    double AntDistDeviationFactor = 1.2;  // factor (>1), of whom lenght vector from both GPS units can max differ from AntDist before stop heading calc
     byte checkUBXFlags = 1;               //UBX sending quality flags, when used with RTK sometimes 
     byte filterGPSposOnWeakSignal = 1;    //filter GPS Position on weak GPS signal
    
