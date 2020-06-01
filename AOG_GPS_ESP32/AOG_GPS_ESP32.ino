@@ -11,7 +11,7 @@
 
 //filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
 
-//by Matthias Hammer (MTZ8302) 21.03.2020
+//by Matthias Hammer (MTZ8302) 31.5.2020
 
 //change stettings to your need. Afterwards you can change them via webinterface x.x.x.79 (192.168.1.79)
 //if connection to your network fails an accesspoint is opened: webinterface 192.168.1.1
@@ -22,18 +22,19 @@
 //use webinterface, turn debugmodeUBX on and change GPIO pin until you get data from the UBlox receivers on USB serial monitor
 
 //the settings below are written as defalt values and can be reloaded.
-//So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
+//So if changing settings set EEPROM_clear = true; (line ~109) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
+
 
 #define HardwarePlatform 0      //0 = runs on ESP32, 1 = runs on Arduino Mega
 
 struct set {
-    //connection plan:
+    //connection plan
     // ESP32--- Right F9P GPS pos --- Left F9P Heading-----Sentences
-    //  RX1----------TX1--------------------------------UBX-Nav-PVT out   (=position+speed)
-    //  TX1----------RX1--------------------------------RTCM in           (NTRIP comming from AOG to get absolute/correct postion
-    //  RX2--------------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
-    //  TX2--------------------------------RX1----------
-    //               RX2-------------------TX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in right F9P = NTRIP for relative positioning)
+    //  RX1-27-------TX1--------------------------------UBX-Nav-PVT out   (=position+speed)
+    //  TX1-16-------RX1--------------------------------RTCM in           (NTRIP comming from AOG to get absolute/correct postion
+    //  RX2-25-----------------------------TX1----------UBX-RelPosNED out (=position relative to other Antenna)
+    //  TX2-17-----------------------------RX1----------
+    //               TX2-------------------RX2----------RTCM 1077+1087+1097+1127+1230+4072.0+4072.1 (activate in right F9P = NTRIP for relative positioning)
   
     // IO pins ----------------------------------------------------------------------------------------
     byte RX1 = 27;              //right F9P TX1 GPS pos
@@ -54,6 +55,8 @@ struct set {
     char ssid_ap[24] = "GPS_unit_F9P_Net";  // name of Access point, if no WiFi found, NO password!!
     int timeoutRouter = 100;                //time (s) to search for existing WiFi, than starting Accesspoint 
 
+    byte timeoutWebIO = 10;                 //time (min) afterwards webinterface is switched off
+
     //static IP
     byte myip[4] = { 192, 168, 1, 79 };     // Roofcontrol module 
     byte gwip[4] = { 192, 168, 1, 1 };      // Gateway IP also used if Accesspoint created
@@ -71,7 +74,7 @@ struct set {
     //Antennas position
     double AntDist = 74.0;                //cm distance between Antennas
     double AntHight = 228.0;              //cm hight of Antenna
-    double virtAntRight = 37.0;           //cm to move virtual Antenna to the right
+    double virtAntRight = 42.0;           //cm to move virtual Antenna to the right
     double virtAntForew = 60.0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
@@ -82,8 +85,7 @@ struct set {
     byte GPSPosCorrByRoll = 1;            // 0 = off, 1 = correction of position by roll (AntHight must be > 0)
     double rollAngleCorrection = 0.0; 
 
-    byte MaxHeadChangPerSec = 40;//50;         // degrees that heading is allowed to change per second
-    byte useMixedHeading = 1;             // 0 = off, 1 = uses mix of VTG heading (1 Antenna) and RelPosNED (dual Antenna) if signal is low
+    byte MaxHeadChangPerSec = 30;         // degrees that heading is allowed to change per second
    
     byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
 
@@ -114,8 +116,8 @@ unsigned int LED_WIFI_time = 0;
 unsigned int LED_WIFI_pulse = 1400;   //light on in ms 
 unsigned int LED_WIFI_pause = 700;   //light off in ms
 boolean LED_WIFI_ON = false;
-unsigned long NtripDataTime = 0, now = 0;
-
+unsigned long NtripDataTime = 0, now = 0, WebIOTimeOut = 0;
+bool WebIORunning = true;
 
 
 //Kalman filter roll
@@ -246,7 +248,7 @@ struct NAV_RELPOSNED {
     long relPosD;
     long relPosLength;
     long relPosHeading;
-    unsigned char res2;
+    long res2;//    unsigned char res2;
     char relPosHPN;
     char relPosHPE;
     char relPosHPD;
@@ -256,7 +258,7 @@ struct NAV_RELPOSNED {
     unsigned long accD;
     unsigned long accLength;
     unsigned long accHeading;
-    unsigned char res3;
+    long res3; // unsigned char res3;
     unsigned long flags;
     unsigned char CK0;
     unsigned char CK1;
@@ -265,22 +267,18 @@ NAV_RELPOSNED UBXRelPosNED[sizeOfUBXArray];
 
 #if HardwarePlatform == 0
 #include <AsyncUDP.h>
-#include <WiFiUdp.h>//for OTA
-#include <WiFiSTA.h>
-#include <WiFiServer.h>
 #include <WiFiClient.h>
-#include <WiFiAP.h>
+#include <WebServer.h>
+#include <Update.h>
 #include <WiFi.h>
 #include <EEPROM.h>
-//#include <ESPmDNS.h>//for OTA
-//#include <ArduinoOTA.h>
-
+#include <HTTP_Method.h>
 
 //instances----------------------------------------------------------------------------------------
 AsyncUDP udpRoof;
 AsyncUDP udpNtrip;
-WiFiServer server(80);
-WiFiClient client_page;
+WebServer server(80);
+
 #endif
 
 // SETUP ------------------------------------------------------------------------------------------
@@ -344,54 +342,12 @@ void setup()
         Serial.println(GPSSet.portMy);
     }
     delay(200);
-    server.begin();
+  
+    //start Server for Webinterface
+    StartServer();
+
     delay(50);
-
-
-
-    // Port defaults to 3232
-  // ArduinoOTA.setPort(3232);
-
-  // Hostname defaults to esp3232-[MAC]
-  // ArduinoOTA.setHostname("myesp32");
-
-  // No authentication by default
-  // ArduinoOTA.setPassword("admin");
-
-  // Password can be set with it's md5 value as well
-  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
-/*
-    ArduinoOTA
-        .onStart([]() {
-        String type;
-        if (ArduinoOTA.getCommand() == U_FLASH)
-            type = "sketch";
-        else // U_SPIFFS
-            type = "filesystem";
-
-        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-        Serial.println("Start updating " + type);
-            })
-        .onEnd([]() {
-                Serial.println("\nEnd");
-            })
-                .onProgress([](unsigned int progress, unsigned int total) {
-                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-                    })
-                .onError([](ota_error_t error) {
-                        Serial.printf("Error[%u]: ", error);
-                        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-                        else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-                        else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-                        else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-                        else if (error == OTA_END_ERROR) Serial.println("End Failed");
-                    });
-
-                    ArduinoOTA.begin();
-
-
-Serial.println("OTA done");*/
+    WebIOTimeOut = millis() + (long(GPSSet.timeoutWebIO) * 60000);
 #endif
 
 }
@@ -400,7 +356,6 @@ Serial.println("OTA done");*/
 
 void loop()
 {
-   // ArduinoOTA.handle();
 
 	getUBX();//read serials    
 
@@ -502,9 +457,9 @@ void loop()
 			newHDT = false;
 		}
 	}
-
+    now = millis();
     if ((GPSSet.AOGNtrip == 1) && (GPSSet.LEDWiFi_PIN != 0)) {
-        now = millis();
+       
         if (now > (NtripDataTime + 3000)) {
             if ((LED_WIFI_ON) && (now > (LED_WIFI_time + LED_WIFI_pulse))) {
                 digitalWrite(GPSSet.LEDWiFi_PIN, !GPSSet.LEDWiFi_ON_Level);
@@ -519,7 +474,14 @@ void loop()
         }
     }
 
-	doWebInterface();
+    if (WebIORunning) {
+        if ((now > WebIOTimeOut) && (GPSSet.timeoutWebIO != 255)) {
+            WebIORunning = false;
+            server.close();
+            if (GPSSet.debugmode) { Serial.println("switching off Webinterface"); }
+        }
+        server.handleClient(); //does the Webinterface
+    }
 #endif
     
 }

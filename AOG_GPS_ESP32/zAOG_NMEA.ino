@@ -242,8 +242,7 @@ void buildOGI() {
 
 
 	//GPS dual heading
-	double tempGPSHead;
-	tempGPSHead = HeadingMix;
+	double tempGPSHead = HeadingMix;
 	temp = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - temp * 100;
 	OGIBuffer[OGIdigit++] = temp + 48;
@@ -318,12 +317,7 @@ void buildHDT() {
 	HDTBuffer[5] = 0x54;//T
 	HDTBuffer[6] = 0x2C;//,
 	//heading
-	double tempGPSHead;
-	if (GPSSet.useMixedHeading) {
-		if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
-		tempGPSHead = HeadingMix;
-	}
-	else { tempGPSHead = HeadingRelPosNED; }
+	double tempGPSHead = HeadingMix;
 	tempbyt = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - tempbyt * 100;
 	HDTBuffer[7] = tempbyt + 48;
@@ -398,9 +392,6 @@ void buildGGA() {
 
 	//lat: xx min min . min/10 .. 4.5 digits
 	long Lat = UBXPVT1[UBXRingCount1].lat;
-//	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
-//	else { Lat = UBXPVT1[UBXRingCount1].lat; }
-	//if (debugmode) { Serial.print("UBX1 Lat (deg *10^-7): "); Serial.println(Lat); }
 	//N/S?
 	byte Sign = 0x53;//S
 	if (Lat > 0) { Sign = 0x4E; }//N	
@@ -432,9 +423,6 @@ void buildGGA() {
 
 	//lon: xxx min min . min/10 .. 5.5 digits
 	long Lon = UBXPVT1[UBXRingCount1].lon;
-//	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
-//	else { Lon = UBXPVT1[UBXRingCount1].lon; }
-	//if (debugmode) { Serial.print("UBX1 Lon (deg *10^-7): "); Serial.println(Lon); }
 	//E/W?
 	if (Lon < 0) { Sign = 0x57; }//W
 	else { Sign = 0x45; }//E
@@ -561,17 +549,7 @@ void buildVTG() {
 
 	//allways +48 to get ASCII: "0" = 48
 	double tempGPSHead;
-//	if (GPSSet.useMixedHeading) {
-//		if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
-		tempGPSHead = HeadingMix; //decided in Heading calc
-/*	}
-	else {
-		if (dualGPSHeadingPresent) { tempGPSHead = HeadingRelPosNED; }
-		else {
-			if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
-			tempGPSHead = HeadingVTG;
-		}
-	}*/
+	tempGPSHead = HeadingMix; //decided in Heading calc
 	tempbyt = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - tempbyt * 100;
 	VTGBuffer[VTGdigit++] = tempbyt + 48;
