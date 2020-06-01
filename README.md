@@ -17,7 +17,7 @@ for easier setup use webinterface, turn debugmessageUBX on and change PIN allign
 
 Config via UCenter:
 First set on both boards UART1 speed to 115200, UART2 speed to 460800 and activate NMEA+UBX+RTCM3 to inputs and UBX +RTCM3 to output on UART1+2. Then set Nav Rate to 100ms (10Hz).
-In the messages I deactivated everything expect of (UBX) NavPVT and (NMEA) GSV on UART1 at one board and NavRelPosNED on UART1 at the other board. At both activate the RTCM messages 1077/1087/1097/1127/1230/4072.0/4072.1 on UART2.
+In the messages I deactivated everything expect of (UBX) NavPVT and (NMEA) GSV on UART1 at one board and NavRelPosNED on UART1 at the other board. At the right (position) F9P activate the RTCM messages 1077/1087/1097/1127/1230/4072.0/4072.1 on UART2.
 
 Don’t forget to save the config!
 
@@ -28,4 +28,4 @@ The ESP32 is connected to both boards UART1 separately (2x2 pins, RX/TX crossed 
 
 Also see UBlox PDFs
 
-# !!When using a new Version, set EEPROM_clear = true; (line 97) - flash - boot reset to EEPROM_clear = false; and flash again to reset settings!!
+# !!When using a new Version, set EEPROM_clear = true; (line 109) - flash - boot reset to EEPROM_clear = false; and flash again to reset settings!!
