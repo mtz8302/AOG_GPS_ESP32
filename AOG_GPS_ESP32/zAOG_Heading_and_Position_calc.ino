@@ -29,7 +29,7 @@ void headingRollCalc() {
 							headVarProcess = VarProcessFast;  //set Kalman filter
 							headVTGVarProcess = VarProcessMedi; //set Kalman filter
 							if (drivDirect < 2) {//forewards or unknown
-								if (UBXRelPosNED[UBXRingCount2].relPosHeading > 1) {//RelPosNED ok								
+								if (UBXRelPosNED[UBXRingCount2].relPosHeading != 0) {//RelPosNED ok								
 									HeadingQualFactor = 0.8;//0.7
 									HeadingQuotaVTG = 0.0;
 								}
@@ -77,7 +77,7 @@ void headingRollCalc() {
 							if (drivDirect < 2)//forewards or unknown
 							{
 								HeadingQualFactor = 0.45;//0,5
-								HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(5000);//10000    // 24.03.2020
+								HeadingQuotaVTG = double(UBXPVT1[UBXRingCount1].gSpeed) / double(8000);//10000    // 24.03.2020
 								if (HeadingQuotaVTG > 1.0) { HeadingQuotaVTG = 1.0; }//at x km/h use only VTG
 							}
 							else {
@@ -211,6 +211,9 @@ void headingRollCalc() {
 			}
 
 			//do this, if GNSFix is OK:
+
+			//HeadingVTG Kalman filter go to cos for filtering to avoid 360-0° jump
+			//cosHeadVTG = cos((HeadingVTG * 0.6) + (UBXPVT1[UBXRingCount1].headMot * 0.000004 * PI180));
 			cosHeadVTG = cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180));
 			headVTGK = cosHeadVTG;//input
 			if (abs(cosHeadVTG > 0.98)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
@@ -310,7 +313,7 @@ void headingRollCalc() {
 
 
 	//roll: filter before sending to AOG, if roll corrected position is send
-	if (GPSSet.GPSPosCorrByRoll) { rollToAOG = (rollToAOG * 0.6) + (roll * 0.4); }
+	if (GPSSet.GPSPosCorrByRoll) { rollToAOG = (rollToAOG * 0.7) + (roll * 0.3); }
 	else { rollToAOG = roll; }
 
 	//heading
@@ -321,7 +324,7 @@ void headingRollCalc() {
 	
 	HeadingMin = HeadingVTGOld - HeadingDiff;
 	HeadingMax = HeadingVTGOld + HeadingDiff;
-	
+	//if ((HeadingVTG > HeadingDiff) && (HeadingVTG < (360 - HeadingDiff)) && (UBXPVT1[UBXRingCount1].gSpeed > 1000)) {
 	if ((HeadingVTG > HeadingDiff) && (HeadingVTG < (360 - HeadingDiff)) && (abs(HeadingVTGOld - HeadingVTG) < 150) && (UBXPVT1[UBXRingCount1].gSpeed > 1000)) {
 		if (GPSSet.debugmodeRAW) {
 			Serial.print("HeadingVTG VTGconstrain,");
@@ -381,8 +384,24 @@ void headingRollCalc() {
 		Serial.print(HeadingRelPosNED); Serial.print(",");
 		Serial.print(HeadingMix); Serial.print(",");
 	}
-
+/*
+	HeadingMin = HeadingMixBak - HeadingDiff;
+	HeadingMax = HeadingMixBak + HeadingDiff;
+	if ((HeadingMixBak > HeadingDiff) && (HeadingMixBak < (360-HeadingDiff))) {//360 to 0
+		HeadingMix = constrain(HeadingMix, HeadingMin, HeadingMax);
+		if (GPSSet.debugmodeHeading) {
+			Serial.print("MixLimits: HeadMin: "); Serial.print(HeadingMin); Serial.print(" HeadMax: ");
+			Serial.print(HeadingMax); Serial.print(" Heading Mix: "); Serial.println(HeadingMix);
+		}
+		if (GPSSet.debugmodeRAW) {Serial.print("constrain used,");}
+	}
+	else { if (GPSSet.debugmodeRAW) { Serial.print("NO constrain,"); } }
+*/
 	if (GPSSet.debugmodeRAW) {
+	//	Serial.print("headDiffMin HeadDiffMax HeadingMix,");
+	//	Serial.print(HeadingMin); Serial.print(",");
+	//	Serial.print(HeadingMax); Serial.print(",");
+	//	Serial.print(HeadingMix); Serial.print(",");
 		Serial.print("NoRollCount DualAntNoValueCount,");
 		Serial.print(noRollCount); Serial.print(",");
 		Serial.print(dualAntNoValueCount); Serial.print(",");

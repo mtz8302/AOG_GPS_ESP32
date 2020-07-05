@@ -78,6 +78,7 @@ $PAOGI
 
 void buildOGI() {
 	byte CRC = 0;
+	long templng;
 
 	//create $PAOGI
 	OGIBuffer[0] = 0x24;//$
@@ -106,41 +107,40 @@ void buildOGI() {
 	time = time % 10;
 	OGIBuffer[OGIdigit++] = time + 48;
 	OGIBuffer[OGIdigit++] = 0x2E;//.
-	long timel = UBXPVT1[UBXRingCount1].nano / 1000000;//ms
-	OGIBuffer[OGIdigit++] = (timel / 100) + 48;
-	timel = timel % 100;
-	OGIBuffer[OGIdigit++] = (timel / 10) + 48;
+	templng = UBXPVT1[UBXRingCount1].nano / 1000000;//ms
+	OGIBuffer[OGIdigit++] = (templng / 100) + 48;
+	templng = templng % 100;
+	OGIBuffer[OGIdigit++] = (templng / 10) + 48;
 
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//lat: xx min min . min/10 .. 4.5 digits
-	long Lat = 0;
-	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
-	else { Lat = UBXPVT1[UBXRingCount1].lat; }
-	if (GPSSet.debugmodeRAW) { Serial.print("buildOGI tempLat temLon,"); Serial.print(Lat); Serial.print(",");}
+	if (filterGPSpos || virtAntPosPresent) { templng = long(virtLat * 10000000); }
+	else { templng = UBXPVT1[UBXRingCount1].lat; }
+	if (GPSSet.debugmodeRAW) { Serial.print("buildOGI tempLat temLon,"); Serial.print(templng); Serial.print(",");}
 	//N/S?
 	byte Sign = 0x53;//S
-	if (Lat > 0) {Sign = 0x4E;}//N	
-	Lat = abs(Lat);
-	OGIBuffer[OGIdigit++] = (Lat / 100000000)+48;
-	Lat = Lat % 100000000;
-	OGIBuffer[OGIdigit++] = (Lat / 10000000) + 48;
-	Lat = Lat % 10000000;
-	Lat = Lat * 0.6;//dec to min
-	OGIBuffer[OGIdigit++] = (Lat / 1000000) + 48;
-	Lat = Lat % 1000000;
-	OGIBuffer[OGIdigit++] = (Lat / 100000) + 48;
-	Lat = Lat % 100000;
+	if (templng > 0) {Sign = 0x4E;}//N	
+	templng = abs(templng);
+	OGIBuffer[OGIdigit++] = (templng / 100000000)+48;
+	templng = templng % 100000000;
+	OGIBuffer[OGIdigit++] = (templng / 10000000) + 48;
+	templng = templng % 10000000;
+	templng = templng * 0.6;//dec to min
+	OGIBuffer[OGIdigit++] = (templng / 1000000) + 48;
+	templng = templng % 1000000;
+	OGIBuffer[OGIdigit++] = (templng / 100000) + 48;
+	templng = templng % 100000;
 	OGIBuffer[OGIdigit++] = 0x2E;//.
-	OGIBuffer[OGIdigit++] = (Lat / 10000) + 48;
-	Lat = Lat % 10000;
-	OGIBuffer[OGIdigit++] = (Lat / 1000) + 48;
-	Lat = Lat % 1000;
-	OGIBuffer[OGIdigit++] = (Lat /100)+ 48;
-	Lat = Lat % 100;
-	OGIBuffer[OGIdigit++] = (Lat / 10) + 48;
-	Lat = Lat % 10;	
-	OGIBuffer[OGIdigit++] = Lat + 48;
+	OGIBuffer[OGIdigit++] = (templng / 10000) + 48;
+	templng = templng % 10000;
+	OGIBuffer[OGIdigit++] = (templng / 1000) + 48;
+	templng = templng % 1000;
+	OGIBuffer[OGIdigit++] = (templng /100)+ 48;
+	templng = templng % 100;
+	OGIBuffer[OGIdigit++] = (templng / 10) + 48;
+	templng = templng % 10;	
+	OGIBuffer[OGIdigit++] = templng + 48;
 
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 	//N/S
@@ -148,35 +148,34 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//lon: xxx min min . min/10 .. 5.5 digits
-	long Lon = 0 ;
-	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
-	else { Lon = UBXPVT1[UBXRingCount1].lon; }
-	if (GPSSet.debugmodeRAW) { Serial.print(Lon); Serial.print(","); }
+	if (filterGPSpos || virtAntPosPresent) { templng = long(virtLon * 10000000); }
+	else { templng = UBXPVT1[UBXRingCount1].lon; }
+	if (GPSSet.debugmodeRAW) { Serial.print(templng); Serial.print(","); }
 	//E/W?
-	if (Lon < 0){Sign = 0x57;}//W
+	if (templng < 0){Sign = 0x57;}//W
 	else{Sign= 0x45;	}//E
-	Lon = abs(Lon);
-	OGIBuffer[OGIdigit++] = (Lon / 1000000000) + 48;
-	Lon = Lon % 1000000000;
-	OGIBuffer[OGIdigit++] = (Lon / 100000000) + 48;
-	Lon = Lon % 100000000;
-	OGIBuffer[OGIdigit++] = (Lon / 10000000) + 48;
-	Lon = Lon % 10000000;
-	Lon = Lon * 0.6;//dec to min
-	OGIBuffer[OGIdigit++] = (Lon / 1000000) + 48;
-	Lon = Lon % 1000000;
-	OGIBuffer[OGIdigit++] = (Lon / 100000) + 48;
-	Lon = Lon % 100000;
+	templng = abs(templng);
+	OGIBuffer[OGIdigit++] = (templng / 1000000000) + 48;
+	templng = templng % 1000000000;
+	OGIBuffer[OGIdigit++] = (templng / 100000000) + 48;
+	templng = templng % 100000000;
+	OGIBuffer[OGIdigit++] = (templng / 10000000) + 48;
+	templng = templng % 10000000;
+	templng = templng * 0.6;//dec to min
+	OGIBuffer[OGIdigit++] = (templng / 1000000) + 48;
+	templng = templng % 1000000;
+	OGIBuffer[OGIdigit++] = (templng / 100000) + 48;
+	templng = templng % 100000;
 	OGIBuffer[OGIdigit++] = 0x2E;//.
-	OGIBuffer[OGIdigit++] = (Lon / 10000) + 48;
-	Lon = Lon % 10000;
-	OGIBuffer[OGIdigit++] = (Lon / 1000) + 48;
-	Lon = Lon % 1000;
-	OGIBuffer[OGIdigit++] = (Lon / 100) + 48;
-	Lon = Lon % 100;
-	OGIBuffer[OGIdigit++] = (Lon / 10) + 48;
-	Lon = Lon % 10;
-	OGIBuffer[OGIdigit++] = Lon + 48;
+	OGIBuffer[OGIdigit++] = (templng / 10000) + 48;
+	templng = templng % 10000;
+	OGIBuffer[OGIdigit++] = (templng / 1000) + 48;
+	templng = templng % 1000;
+	OGIBuffer[OGIdigit++] = (templng / 100) + 48;
+	templng = templng % 100;
+	OGIBuffer[OGIdigit++] = (templng / 10) + 48;
+	templng = templng % 10;
+	OGIBuffer[OGIdigit++] = templng + 48;
 
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 	//E/W
@@ -203,7 +202,12 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = pDOP + 48;
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
-	long templng = UBXPVT1[UBXRingCount1].hMSL;//hight main sea level mm
+	//hight main sea level mm
+	if (UBXPVT1[UBXRingCount1].hMSL < 0) {//below sea level, so write "-"
+		OGIBuffer[OGIdigit++] = 0x2D;
+		templng = abs(UBXPVT1[UBXRingCount1].hMSL);
+	}
+	else templng = UBXPVT1[UBXRingCount1].hMSL;
 	OGIBuffer[OGIdigit++] = (templng / 1000000) + 48;
 	templng = templng % 1000000;
 	OGIBuffer[OGIdigit++] = (templng / 100000) + 48;
@@ -224,19 +228,18 @@ void buildOGI() {
 	//ground speed knots
 	if (drivDirect == 2) {//backwards, so write "-"
 		OGIBuffer[OGIdigit++] = 0x2D;}
-	long speed1000Knotes;
-	if (UBXPVT1[UBXRingCount1].gSpeed > 30) { speed1000Knotes = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed); }
-	else speed1000Knotes = 0;//send 0 if slower than 0,1km/h
-	OGIBuffer[OGIdigit++] = (speed1000Knotes / 10000) + 48;
-	speed1000Knotes = speed1000Knotes % 10000;
-	OGIBuffer[OGIdigit++] = (speed1000Knotes / 1000)+48;
-	speed1000Knotes = speed1000Knotes % 1000;
+	if (UBXPVT1[UBXRingCount1].gSpeed > 30) { templng = (1.9438445 * UBXPVT1[UBXRingCount1].gSpeed); }
+	else templng = 0;//send 0 if slower than 0,1km/h
+	OGIBuffer[OGIdigit++] = (templng / 10000) + 48;
+	templng = templng % 10000;
+	OGIBuffer[OGIdigit++] = (templng / 1000)+48;
+	templng = templng % 1000;
 	OGIBuffer[OGIdigit++] = 0x2E;//.
-	OGIBuffer[OGIdigit++] = (speed1000Knotes / 100)+48;
-	speed1000Knotes = speed1000Knotes %100;
-	OGIBuffer[OGIdigit++] = (speed1000Knotes / 10)+48;
-	speed1000Knotes = speed1000Knotes%10;
-	OGIBuffer[OGIdigit++] = speed1000Knotes+48;
+	OGIBuffer[OGIdigit++] = (templng / 100)+48;
+	templng = templng %100;
+	OGIBuffer[OGIdigit++] = (templng / 10)+48;
+	templng = templng %10;
+	OGIBuffer[OGIdigit++] = templng +48;
 
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
@@ -278,8 +281,6 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 	//yaw
 	OGIBuffer[OGIdigit++] = 0x2C;//,
-	//angular velocity
-	//...,
 
 	OGIBuffer[OGIdigit++] = 0x2A;//*
 
@@ -392,6 +393,9 @@ void buildGGA() {
 
 	//lat: xx min min . min/10 .. 4.5 digits
 	long Lat = UBXPVT1[UBXRingCount1].lat;
+//	if (filterGPSpos || virtAntPosPresent) { Lat = long(virtLat * 10000000); }
+//	else { Lat = UBXPVT1[UBXRingCount1].lat; }
+	//if (debugmode) { Serial.print("UBX1 Lat (deg *10^-7): "); Serial.println(Lat); }
 	//N/S?
 	byte Sign = 0x53;//S
 	if (Lat > 0) { Sign = 0x4E; }//N	
@@ -423,6 +427,9 @@ void buildGGA() {
 
 	//lon: xxx min min . min/10 .. 5.5 digits
 	long Lon = UBXPVT1[UBXRingCount1].lon;
+//	if (filterGPSpos || virtAntPosPresent) { Lon = long(virtLon * 10000000); }
+//	else { Lon = UBXPVT1[UBXRingCount1].lon; }
+	//if (debugmode) { Serial.print("UBX1 Lon (deg *10^-7): "); Serial.println(Lon); }
 	//E/W?
 	if (Lon < 0) { Sign = 0x57; }//W
 	else { Sign = 0x45; }//E
@@ -549,7 +556,17 @@ void buildVTG() {
 
 	//allways +48 to get ASCII: "0" = 48
 	double tempGPSHead;
-	tempGPSHead = HeadingMix; //decided in Heading calc
+//	if (GPSSet.useMixedHeading) {
+//		if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
+		tempGPSHead = HeadingMix; //decided in Heading calc
+/*	}
+	else {
+		if (dualGPSHeadingPresent) { tempGPSHead = HeadingRelPosNED; }
+		else {
+			if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
+			tempGPSHead = HeadingVTG;
+		}
+	}*/
 	tempbyt = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - tempbyt * 100;
 	VTGBuffer[VTGdigit++] = tempbyt + 48;

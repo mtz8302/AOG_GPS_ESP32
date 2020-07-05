@@ -11,7 +11,7 @@
 
 //filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
 
-//by Matthias Hammer (MTZ8302) 31.5.2020
+//by Matthias Hammer (MTZ8302) 5.Juli.2020
 
 //change stettings to your need. Afterwards you can change them via webinterface x.x.x.79 (192.168.1.79)
 //if connection to your network fails an accesspoint is opened: webinterface 192.168.1.1
@@ -22,13 +22,13 @@
 //use webinterface, turn debugmodeUBX on and change GPIO pin until you get data from the UBlox receivers on USB serial monitor
 
 //the settings below are written as defalt values and can be reloaded.
-//So if changing settings set EEPROM_clear = true; (line ~109) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
+//So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
 
 
 #define HardwarePlatform 0      //0 = runs on ESP32, 1 = runs on Arduino Mega
 
 struct set {
-    //connection plan
+    //connection plan:
     // ESP32--- Right F9P GPS pos --- Left F9P Heading-----Sentences
     //  RX1-27-------TX1--------------------------------UBX-Nav-PVT out   (=position+speed)
     //  TX1-16-------RX1--------------------------------RTCM in           (NTRIP comming from AOG to get absolute/correct postion
@@ -267,12 +267,17 @@ NAV_RELPOSNED UBXRelPosNED[sizeOfUBXArray];
 
 #if HardwarePlatform == 0
 #include <AsyncUDP.h>
+//#include <WiFiUdp.h>
+//#include <WiFiSTA.h>
+//#include <WiFiServer.h>
+#include <HTTP_Method.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <Update.h>
+//#include <WiFiAP.h>
 #include <WiFi.h>
 #include <EEPROM.h>
-#include <HTTP_Method.h>
+
 
 //instances----------------------------------------------------------------------------------------
 AsyncUDP udpRoof;
@@ -474,13 +479,13 @@ void loop()
         }
     }
 
-    if (WebIORunning) {
+    if (WebIORunning) {       
+        server.handleClient(); //does the Webinterface
         if ((now > WebIOTimeOut) && (GPSSet.timeoutWebIO != 255)) {
             WebIORunning = false;
             server.close();
             if (GPSSet.debugmode) { Serial.println("switching off Webinterface"); }
         }
-        server.handleClient(); //does the Webinterface
     }
 #endif
     

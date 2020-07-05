@@ -310,7 +310,7 @@ void make_HTML01() {
     strcati(HTML_String, GPSSet.AOGNtripPort);
     strcat(HTML_String," to UBlox receiver</b><br><br>");
     strcat(HTML_String, "more settings like IPs, UPD ports... in setup zone of INO code<br>");
-    strcat(HTML_String, "(Rev. 4.3 - 31. Mai 2020 by MTZ8302 Webinterface by WEDER)<br><hr>");
+    strcat(HTML_String, "(Rev. 4.3 - 5. July 2020 by MTZ8302 Webinterface by WEDER)<br><hr>");
 
 
     //---------------------------------------------------------------------------------------------  
@@ -493,6 +493,14 @@ void make_HTML01() {
     else {
         if (HeadingVTG < 100) { strcatf(HTML_String, HeadingVTG, 4, 1); }
         else { strcatf(HTML_String, HeadingVTG, 5, 1); }
+    }
+    strcat(HTML_String, "</b></font></divbox></td>");
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+    strcat(HTML_String, "<tr><td>Heading Mix</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
+    if (HeadingMix < 10) { strcatf(HTML_String, HeadingMix, 3, 1); }
+    else {
+        if (HeadingMix < 100) { strcatf(HTML_String, HeadingMix, 4, 1); }
+        else { strcatf(HTML_String, HeadingMix, 5, 1); }
     }
     strcat(HTML_String, "</b></font></divbox></td>");
     //Refresh button
