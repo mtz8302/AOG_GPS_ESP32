@@ -11,7 +11,7 @@
 
 //filters roll, heading and on weak GPS signal, position with filter parameters changing dynamic on GPS signal quality
 
-//by Matthias Hammer (MTZ8302) 5.Juli.2020
+//by Matthias Hammer (MTZ8302) 12.Juli.2020
 
 //change stettings to your need. Afterwards you can change them via webinterface x.x.x.79 (192.168.1.79)
 //if connection to your network fails an accesspoint is opened: webinterface 192.168.1.1
@@ -22,7 +22,7 @@
 //use webinterface, turn debugmodeUBX on and change GPIO pin until you get data from the UBlox receivers on USB serial monitor
 
 //the settings below are written as defalt values and can be reloaded.
-//So if changing settings set EEPROM_clear = true; (line ~97) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
+//So if changing settings set EEPROM_clear = true; (line ~109) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
 
 
 #define HardwarePlatform 0      //0 = runs on ESP32, 1 = runs on Arduino Mega
@@ -53,7 +53,7 @@ struct set {
     char password[24] = "";                 // WiFi network password//Accesspoint name and password
 
     char ssid_ap[24] = "GPS_unit_F9P_Net";  // name of Access point, if no WiFi found, NO password!!
-    int timeoutRouter = 100;                //time (s) to search for existing WiFi, than starting Accesspoint 
+    int timeoutRouter = 10;                //time (s) to search for existing WiFi, than starting Accesspoint 
 
     byte timeoutWebIO = 10;                 //time (min) afterwards webinterface is switched off
 

@@ -30,6 +30,21 @@ void StartServer() {
         server.sendHeader("Connection", "close");
         server.send(200, "text/html", HTML_String);
         });
+    server.on("/root", HTTP_GET, []() { //needed for 404 not found redirect
+        make_HTML01();
+        server.sendHeader("Connection", "close");
+        server.send(200, "text/html", HTML_String);
+        if (GPSSet.debugmode) { Serial.println("Webpage root"); }
+        process_Request();
+        make_HTML01();
+        WebIOTimeOut = millis() + (long(GPSSet.timeoutWebIO) * 60000);
+
+        Serial.print("millis: "); Serial.print(millis());
+        Serial.print(" timeout WebIO: "); Serial.println(WebIOTimeOut);
+
+        server.sendHeader("Connection", "close");
+        server.send(200, "text/html", HTML_String);
+        });
     server.on("/serverIndex", HTTP_GET, []() {
         server.sendHeader("Connection", "close");
         server.send(200, "text/html", serverIndex);
@@ -934,6 +949,33 @@ void make_HTML01() {
 //-------------------------------------------------------------------------------------------------
 
 void handleNotFound() {
+    const char* notFound =
+        "<!doctype html>"
+        "<html lang = \"en\">"
+        "<head>"""
+        "<meta charset = \"utf - 8\">"
+        "<meta http - equiv = \"x - ua - compatible\" content = \"ie = edge\">"
+        "<meta name = \"viewport\" content = \"width = device - width, initial - scale = 1.0\">"
+        "<title>Redirecting</title>"
+        "</head>"
+        "<body onload = \"redirect()\">"
+        "<h1 style = \"text - align: center; padding - top: 50px; display: block; \"><br>404 not found<br><br>Redirecting to settings page in 3 secs ...</h1>"
+        "<script>"
+        "function redirect() {"
+        "setTimeout(function() {"
+        "    window.location.replace(\"/root\");"//new landing page
+        "}"
+        ", 3000);"
+        "}"
+        "</script>"
+        "</body>"
+        "</html>";
+
+	server.sendHeader("Connection", "close");
+	server.send(200, "text/html", notFound);
+	if (GPSSet.debugmode) { Serial.println("redirecting from 404 not found to Webpage root"); }
+
+/*
     String message = "File Not Found\n\n";
     message += "URI: ";
     message += server.uri();
@@ -946,6 +988,7 @@ void handleNotFound() {
         message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
     }
     server.send(404, "text/plain", message);
+ */
 }
 
 //-------------------------------------------------------------------------------------------------
