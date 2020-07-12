@@ -1,5 +1,5 @@
 # AOG_GPS_ESP32
-# DUAL GPS supported!!
+# Single and DUAL GPS supported!!
 Bridge between GPS receiver and AgOpenGPS: transmit GPS Signal via WiFi or USB.
 
 Works with 1 or 2 UBlox receivers to calculate heading+roll. Corrects position by using roll and filters, depends on GPS signal quality.
