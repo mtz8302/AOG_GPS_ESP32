@@ -208,7 +208,7 @@ void process_Request()
         }
         if (server.argName(n) == "DataTransfVia") {
             temLong = server.arg(n).toInt();
-            if ((temLong <= 2) && (temLong >= 0)) { GPSSet.DataTransVia = byte(temLong); }
+            if ((temLong <= 9) && (temLong >= 0)) { GPSSet.DataTransVia = byte(temLong); }
         }
 
         if (server.argName(n) == "debugmode") {
@@ -325,7 +325,7 @@ void make_HTML01() {
     strcati(HTML_String, GPSSet.AOGNtripPort);
     strcat(HTML_String," to UBlox receiver</b><br><br>");
     strcat(HTML_String, "more settings like IPs, UPD ports... in setup zone of INO code<br>");
-    strcat(HTML_String, "(Rev. 4.3 - 5. July 2020 by MTZ8302 Webinterface by WEDER)<br><hr>");
+    strcat(HTML_String, "(Rev. 4.3 - 16. August 2020 by MTZ8302 Webinterface by WEDER)<br><hr>");
 
 
     //---------------------------------------------------------------------------------------------  
@@ -716,6 +716,7 @@ void make_HTML01() {
     strcat(HTML_String, "<table>");
     set_colgroup(300, 250, 150, 0, 0);
 
+    //transfer data via 0 = USB / 1 = USB 10 byte 2x / 7 = UDP / 8 = UDP 2x
     strcat(HTML_String, "<tr>");
     strcat(HTML_String, "<td></td><td><input type = \"radio\" onclick=\"sendVal('/?DataTransfVia=0')\" name=\"DataTransfVia\" id=\"JZ\" value=\"0\"");
     if (GPSSet.DataTransVia == 0)strcat(HTML_String, " CHECKED");
@@ -726,7 +727,17 @@ void make_HTML01() {
     strcat(HTML_String, "<tr>");
     strcat(HTML_String, "<td></td><td><input type = \"radio\" onclick=\"sendVal('/?DataTransfVia=1')\" name=\"DataTransfVia\" id=\"JZ\" value=\"1\"");
     if (GPSSet.DataTransVia == 1)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">USB send 2x</label></td></tr>");
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" onclick=\"sendVal('/?DataTransfVia=7')\" name=\"DataTransfVia\" id=\"JZ\" value=\"7\"");
+    if (GPSSet.DataTransVia == 7)strcat(HTML_String, " CHECKED");
     strcat(HTML_String, "><label for=\"JZ\">WiFi (UDP) (default)</label></td></tr>");
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" onclick=\"sendVal('/?DataTransfVia=8')\" name=\"DataTransfVia\" id=\"JZ\" value=\"8\"");
+    if (GPSSet.DataTransVia == 8)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">WiFi (UDP) send 2x</label></td></tr>");
 
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");

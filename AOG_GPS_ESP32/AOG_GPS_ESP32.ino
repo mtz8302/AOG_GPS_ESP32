@@ -1,4 +1,5 @@
-//ESP32 programm for UBLOX receivers to send NMEA to AgOpenGPS or other program
+//ESP32 programm for UBLOX receivers to send NMEA to AgOpenGPS or other program 
+//Version 16. August 2020 send data 2x
 
 //works with 1 or 2 receivers
 
@@ -23,7 +24,6 @@
 
 //the settings below are written as defalt values and can be reloaded.
 //So if changing settings set EEPROM_clear = true; (line ~109) - flash - boot - reset to EEPROM_clear = false - flash again to keep them as defauls
-
 
 #define HardwarePlatform 0      //0 = runs on ESP32, 1 = runs on Arduino Mega
 
@@ -87,7 +87,7 @@ struct set {
 
     byte MaxHeadChangPerSec = 30;         // degrees that heading is allowed to change per second
    
-    byte DataTransVia = 1;                //transfer data via 0: USB 1: WiFi
+    byte DataTransVia = 8;                //transfer data via 0 = USB / 1 = USB 10 byte 2x / 7 = UDP / 8 = UDP 2x
 
     byte AOGNtrip = 1;                    // AOG NTRIP client 0:off 1:on listens to UDP port or USB serial
     byte sendOGI = 1;                     //1: send NMEA message 0: off
@@ -398,8 +398,32 @@ void loop()
 
 	}
 
-	if (GPSSet.DataTransVia == 0) {//use USB
-		if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1   
+    //transfer data via 0 = USB / 1 = USB 10 byte 2x / 7 = UDP / 8 = UDP 2x
+	if (GPSSet.DataTransVia < 5) {//use USB
+		if (GPSSet.AOGNtrip == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1  
+        
+        //send 2x
+        if (GPSSet.DataTransVia == 1) {
+            if ((newOGI) && (GPSSet.sendOGI == 1)) {
+                for (byte n = 0; n < (OGIdigit - 1); n++) { Serial.write(OGIBuffer[n]); }
+                Serial.println();
+            }
+            if (newVTG) {
+                for (byte n = 0; n < (VTGdigit - 1); n++) { Serial.write(VTGBuffer[n]); }
+                Serial.println();
+            }
+            if (newHDT) {
+                for (byte n = 0; n < (HDTdigit - 1); n++) { Serial.write(HDTBuffer[n]); }
+                Serial.println();
+            }
+            if (newGGA) {
+                for (byte n = 0; n < (GGAdigit - 1); n++) { Serial.write(GGABuffer[n]); }
+                Serial.println();
+            }
+            delay(5);
+        }//end send 2x
+
+        //send USB
         if ((newOGI) && (GPSSet.sendOGI == 1)) {
 			for (byte n = 0; n < (OGIdigit - 1); n++) { Serial.write(OGIBuffer[n]); }
 			Serial.println();
@@ -423,11 +447,12 @@ void loop()
 	}
 
 #if HardwarePlatform == 0
-	if (GPSSet.DataTransVia == 1) {//use WiFi
+	if (GPSSet.DataTransVia > 5) {//use WiFi
 		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
 		if ((newOGI) && (GPSSet.sendOGI == 1)) {
 			udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination);
+            if (GPSSet.DataTransVia == 8) { delay(5); udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination);}
             if (GPSSet.debugmodeRAW) {
                 Serial.print("millis,"); Serial.print(millis()); Serial.print(",");
                 Serial.print("UBXRingCount1 OGIfromUBX PAOGI,");
@@ -451,14 +476,17 @@ void loop()
 		}
 		if (newGGA) {
 			udpRoof.writeTo(GGABuffer, GGAdigit, ipDestination, GPSSet.portDestination);
+            if (GPSSet.DataTransVia == 8) { delay(5); udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination); }
 			newGGA = false;
 		}
 		if (newVTG) {
 			udpRoof.writeTo(VTGBuffer, VTGdigit, ipDestination, GPSSet.portDestination);
+            if (GPSSet.DataTransVia == 8) { delay(5); udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination); }
 			newVTG = false;
 		}
 		if (newHDT) {
 			udpRoof.writeTo(HDTBuffer, HDTdigit, ipDestination, GPSSet.portDestination);
+            if (GPSSet.DataTransVia == 8) { delay(5); udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination); }
 			newHDT = false;
 		}
 	}
