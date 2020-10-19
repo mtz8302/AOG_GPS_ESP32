@@ -146,6 +146,30 @@ void getUBX() {
 		incomByte1 = Serial1.read();
 		//if (GPSSet.debugmodeUBX) { Serial.print("incom Byte: "); Serial.print(incomByte1); Serial.print("UBXRingCount1: "); Serial.print(UBXRingCount1); Serial.print(" nextUBXCount1: "); Serial.println(nextUBXcount1); }
 
+		// ai, 07.10.2020: use the GGA Message to determine Fix-Quality
+		if (incomByte1 == '$') {
+			bNMEAstarted = true;
+			sNMEA = "";
+		}
+		if (bNMEAstarted == true) {
+			sNMEA.concat((char)incomByte1); // add the char to the NMEA message
+			if (incomByte1 == 10) { // ASCII(10) <LF> (Linefeed) ends the message
+				bNMEAstarted = false;
+				if (sNMEA.substring(3, 6) == "GGA") { // GGA Message found
+				  // the fix quality is the char after the sixth ',' - so look for sixth ','
+					iPos = -1;
+					i = 0;
+					do {
+						iPos = sNMEA.indexOf(',', iPos + 1); // find position of next ','
+						if (iPos > -1) { i++; }
+					} while ((i < 6) && (iPos > -1));
+					if (iPos > -1) { cFixQualGGA = sNMEA.charAt(iPos + 1); bGGAexists = true; }
+				}
+			}
+		}
+		// END ai, 07.10.2020: use the GGA Message to determine Fix-Quality
+
+
 		//UBX comming?
 		if (UBXDigit1 < 2) {
 			if (incomByte1 == UBX_HEADER[UBXDigit1]) {

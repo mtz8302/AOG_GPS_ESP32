@@ -111,7 +111,7 @@ void WiFi_Start_AP() {
 }
 
 //-------------------------------------------------------------------------------------------------
-
+/* async only needs one definition .onPacket in setup so code put in setup and time check in main
 void doUDPNtrip() {
 	udpNtrip.onPacket([](AsyncUDPPacket packet)
 		{
@@ -130,7 +130,7 @@ void doUDPNtrip() {
 
 }
 
-
+*/
 //-------------------------------------------------------------------------------------------------
 
 

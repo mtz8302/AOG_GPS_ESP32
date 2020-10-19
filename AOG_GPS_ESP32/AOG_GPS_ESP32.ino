@@ -1,5 +1,5 @@
 //ESP32 programm for UBLOX receivers to send NMEA to AgOpenGPS or other program 
-//Version 16. August 2020 send data 2x
+//Version 19. Oktober 2020 send data 2x, UDP call changed, Fix type from GGA (thanks to ai)
 
 //works with 1 or 2 receivers
 
@@ -53,7 +53,7 @@ struct set {
     char password[24] = "";                 // WiFi network password//Accesspoint name and password
 
     char ssid_ap[24] = "GPS_unit_F9P_Net";  // name of Access point, if no WiFi found, NO password!!
-    int timeoutRouter = 10;                //time (s) to search for existing WiFi, than starting Accesspoint 
+    int timeoutRouter = 90;                //time (s) to search for existing WiFi, than starting Accesspoint 
 
     byte timeoutWebIO = 10;                 //time (min) afterwards webinterface is switched off
 
@@ -179,6 +179,14 @@ double virtLat = 0.0, virtLon = 0.0;//virtual Antenna Position
 byte OGIBuffer[90], HDTBuffer[20], VTGBuffer[50], GGABuffer[80];
 bool newOGI = false, newHDT = false, newGGA = false, newVTG = false;
 byte OGIdigit = 0, GGAdigit = 0, VTGdigit = 0, HDTdigit = 0;
+
+// ai, 07.10.2020: use the GGA Message to determine Fix-Quality
+bool bNMEAstarted = false, bGGAexists = false;
+String sNMEA;
+int i, iPos;
+char cFixQualGGA;
+// END ai, 07.10.2020: use the GGA Message to determine Fix-Quality
+
 
 //heading + roll
 double HeadingRelPosNED = 0, cosHeadRelPosNED = 1, HeadingVTG = 0, HeadingVTGOld = 0, cosHeadVTG = 1, HeadingMix = 0, cosHeadMix = 1;
@@ -337,6 +345,20 @@ void setup()
 		Serial.println();
 	}
     delay(50);
+
+    // UDP NTRIP packet handling
+    udpNtrip.onPacket([](AsyncUDPPacket packet)
+        {
+            if (GPSSet.debugmode) { Serial.println("got NTRIP data"); }
+            for (unsigned int i = 0; i < packet.length(); i++)
+            {
+                Serial1.write(packet.data()[i]);
+            }
+            NtripDataTime = millis();
+        });  // end of onPacket call
+
+    delay(10);
+
     if (udpRoof.listen(GPSSet.portMy))
     {
         Serial.print("UDP writing to IP: ");
@@ -448,7 +470,7 @@ void loop()
 
 #if HardwarePlatform == 0
 	if (GPSSet.DataTransVia > 5) {//use WiFi
-		if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
+		//if (GPSSet.AOGNtrip == 1) { doUDPNtrip(); } //gets UDP NTRIP and sends to serial 1 
 
 		if ((newOGI) && (GPSSet.sendOGI == 1)) {
 			udpRoof.writeTo(OGIBuffer, OGIdigit, ipDestination, GPSSet.portDestination);
@@ -514,6 +536,12 @@ void loop()
             server.close();
             if (GPSSet.debugmode) { Serial.println("switching off Webinterface"); }
         }
+    }
+
+    if (now > (NtripDataTime + 30000))
+    {
+        NtripDataTime = millis();
+        Serial.println("no NTRIP from AOG for more than 30s");
     }
 #endif
     
