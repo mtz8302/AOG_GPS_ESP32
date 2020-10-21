@@ -325,7 +325,7 @@ void make_HTML01() {
     strcati(HTML_String, GPSSet.AOGNtripPort);
     strcat(HTML_String," to UBlox receiver</b><br><br>");
     strcat(HTML_String, "more settings like IPs, UPD ports... in setup zone of INO code<br>");
-    strcat(HTML_String, "(Rev. 4.3 - 16. August 2020 by MTZ8302 Webinterface by WEDER)<br><hr>");
+    strcat(HTML_String, "(Rev. 4.3 - 19. Oktober 2020 by MTZ8302 Webinterface by WEDER)<br><hr>");
 
 
     //---------------------------------------------------------------------------------------------  

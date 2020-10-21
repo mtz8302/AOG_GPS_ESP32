@@ -183,8 +183,11 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//fix type
-	if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { OGIBuffer[OGIdigit++] = 52; }//4 = RTK
-	else { OGIBuffer[OGIdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
+	if (bGGAexists) { OGIBuffer[OGIdigit++] = cFixQualGGA; }// code by ai, 07.10.2020: use the GGA Message to determine Fix-Quality	
+	else {
+		if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { OGIBuffer[OGIdigit++] = 52; }//4 = RTK
+		else { OGIBuffer[OGIdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
+	}
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	byte temp = UBXPVT1[UBXRingCount1].numSV;//number of satellites
@@ -462,8 +465,12 @@ void buildGGA() {
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	//fix type
-	if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { GGABuffer[GGAdigit++] = 52; }//4 = RTK
-	else { GGABuffer[GGAdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
+		//fix type
+	if (bGGAexists) { OGIBuffer[OGIdigit++] = cFixQualGGA; }// code by ai, 07.10.2020: use the GGA Message to determine Fix-Quality	
+	else {
+		if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { GGABuffer[GGAdigit++] = 52; }//4 = RTK
+		else { GGABuffer[GGAdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }
+	}
 	GGABuffer[GGAdigit++] = 0x2C;//,
 
 	byte temp = UBXPVT1[UBXRingCount1].numSV;//number of satellites
