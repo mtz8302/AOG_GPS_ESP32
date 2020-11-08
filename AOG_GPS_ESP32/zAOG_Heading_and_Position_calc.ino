@@ -499,12 +499,12 @@ void virtualAntennaPoint() {
 		virtLatRadTemp = asin((sin(virtLatRad) * cos(WayByRadius)) + (cos(virtLatRad) * sin(WayByRadius) * cos(headingRad)));
 		
 		//may solve E/W Greenwich problem
-		if (virtLon > 0) {
+		//if (virtLon > 0) {
 			virtLonRad = virtLonRad + atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
-		}
-		else{
-			virtLonRad = virtLonRad - atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
-		}
+		//}
+		//else{
+		//	virtLonRad = virtLonRad - atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
+		//}
 		virtLatRad = virtLatRadTemp;
 	
 		//radians to dec
