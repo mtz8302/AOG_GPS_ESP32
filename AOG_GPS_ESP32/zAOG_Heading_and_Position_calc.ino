@@ -216,7 +216,7 @@ void headingRollCalc() {
 			//cosHeadVTG = cos((HeadingVTG * 0.6) + (UBXPVT1[UBXRingCount1].headMot * 0.000004 * PI180));
 			cosHeadVTG = cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180));
 			headVTGK = cosHeadVTG;//input
-			if (abs(cosHeadVTG > 0.98)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
+			if (abs(cosHeadVTG) > 0.98) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
 			else { headVTGPc = headVTGP + headVTGVarProcess; }
 			headVTGG = headVTGPc / (headVTGPc + headVTGVar);
 			headVTGP = (1 - headVTGG) * headVTGPc;
