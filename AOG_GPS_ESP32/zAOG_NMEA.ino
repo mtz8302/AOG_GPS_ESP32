@@ -466,7 +466,7 @@ void buildGGA() {
 
 	//fix type
 		//fix type
-	if (bGGAexists) { OGIBuffer[OGIdigit++] = cFixQualGGA; }// code by ai, 07.10.2020: use the GGA Message to determine Fix-Quality	
+	if (bGGAexists) { GGABuffer[GGAdigit++] = cFixQualGGA; }// code by ai, 07.10.2020: use the GGA Message to determine Fix-Quality	
 	else {
 		if ((bitRead(UBXPVT1[UBXRingCount1].flags, 1) == true) && (UBXPVT1[UBXRingCount1].fixType == 3)) { GGABuffer[GGAdigit++] = 52; }//4 = RTK
 		else { GGABuffer[GGAdigit++] = UBXPVT1[UBXRingCount1].fixType + 48; }

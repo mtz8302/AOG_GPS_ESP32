@@ -216,7 +216,7 @@ void headingRollCalc() {
 			//cosHeadVTG = cos((HeadingVTG * 0.6) + (UBXPVT1[UBXRingCount1].headMot * 0.000004 * PI180));
 			cosHeadVTG = cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180));
 			headVTGK = cosHeadVTG;//input
-			if (abs(cosHeadVTG > 0.98)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
+			if (abs(cosHeadVTG) > 0.98) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
 			else { headVTGPc = headVTGP + headVTGVarProcess; }
 			headVTGG = headVTGPc / (headVTGPc + headVTGVar);
 			headVTGP = (1 - headVTGG) * headVTGPc;
@@ -292,7 +292,7 @@ void headingRollCalc() {
 		//HeadingVTG Kalman filter go to cos for filtering to avoid 360-0° jump
 		cosHeadVTG = cos((UBXPVT1[UBXRingCount1].headMot * 0.00001 * PI180));
 		headVTGK = cosHeadVTG;//input
-		if (abs(cosHeadVTG > 0.98)) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
+		if (abs(cosHeadVTG) > 0.98) { headVTGPc = headVTGP + (headVTGVarProcess * 10); }//"open" filter in 356-4 deg region
 		else { headVTGPc = headVTGP + headVTGVarProcess; }
 		headVTGG = headVTGPc / (headVTGPc + headVTGVar);
 		headVTGP = (1 - headVTGG) * headVTGPc;
@@ -499,12 +499,12 @@ void virtualAntennaPoint() {
 		virtLatRadTemp = asin((sin(virtLatRad) * cos(WayByRadius)) + (cos(virtLatRad) * sin(WayByRadius) * cos(headingRad)));
 		
 		//may solve E/W Greenwich problem
-		if (virtLon > 0) {
+		//if (virtLon > 0) {
 			virtLonRad = virtLonRad + atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
-		}
-		else{
-			virtLonRad = virtLonRad - atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
-		}
+		//}
+		//else{
+		//	virtLonRad = virtLonRad - atan2((sin(headingRad) * sin(WayByRadius) * cos(virtLatRad)), (cos(WayByRadius) - (sin(virtLatRad) * sin(virtLatRadTemp))));
+		//}
 		virtLatRad = virtLatRadTemp;
 	
 		//radians to dec
