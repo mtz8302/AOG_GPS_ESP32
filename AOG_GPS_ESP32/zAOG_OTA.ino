@@ -2,15 +2,13 @@
 // Server Index Page for OTA update
 //-------------------------------------------------------------------------------------------------
 
-#if HardwarePlatform == 0
-
 const char* serverIndex =
 "<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>"
 "<head>"
 "<title>Firmware updater</title>"
 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0;\" />\r\n""<style>divbox {background-color: lightgrey;width: 200px;border: 5px solid red;padding:10px;margin: 10px;}</style>"
 "</head>"
-"<body bgcolor=\"#ffcc00\">""<font color=\"#000000\" face=\"VERDANA,ARIAL,HELVETICA\">"
+"<body bgcolor=\"#66b3ff\">""<font color=\"#000000\" face=\"VERDANA,ARIAL,HELVETICA\">"
 "<h1>ESP firmware update</h1>"
 "ver 4.3 - 10. Mai. 2020<br><br>"
 "<form method='POST' action='#' enctype='multipart/form-data' id='upload_form'>"
@@ -52,4 +50,3 @@ const char* serverIndex =
 "});"
 "</script>";
 
-#endif
