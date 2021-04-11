@@ -99,7 +99,7 @@ struct set {
 
     //Ethernet
     byte Eth_myip[4] = { 192, 168, 1, 80 };     // Roofcontrol module 
-    byte Eth_ipDest_ending = 100;//ending of IP address to send UDP data to
+    byte Eth_ipDest_ending = 255;//ending of IP address to send UDP data to
     byte Eth_mac[6] = { 0x90,0xA2,0xDA,0x10,0xB3,0x1B }; //usb autosteer 0x70, 0x69, 0x69, 0x2D, 0x30, 0x31
     bool Eth_static_IP = false;					// false = use DHPC and set last number to 80 (x.x.x.80) / true = use IP as set above
 
