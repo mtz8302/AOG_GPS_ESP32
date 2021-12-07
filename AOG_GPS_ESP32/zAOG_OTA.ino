@@ -49,4 +49,3 @@ const char* serverIndex =
 "});"
 "});"
 "</script>";
-

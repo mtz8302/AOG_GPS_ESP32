@@ -332,4 +332,3 @@ void setAuthorization(const char* user, const char* password)
            _base64Authorization = base64::encode(auth);
        }
 }
-

@@ -57,7 +57,7 @@ struct set {
     byte LEDWiFi_ON_Level = HIGH;    //HIGH = LED on high, LOW = LED on low
 
 
-
+   
     //Network---------------------------------------------------------------------------------------------
     //tractors WiFi or mobile hotspots
     char ssid1[24] = "Fendt_209V";           // WiFi network Client name
@@ -109,9 +109,9 @@ struct set {
     unsigned int PortDestination = 9999;    //Port of AOG that listens
 
     //Antennas position
-    double AntDist = 74.0;                //cm distance between Antennas
-    double AntHight = 228.0;              //cm hight of Antenna
-    double virtAntLeft = 37.0;           //cm to move virtual Antenna to the left (was renamed, keep your settings, name of direction was wrong)
+    double AntDist = 127.0;                //cm distance between Antennas
+    double AntHight = 304.0;              //cm hight of Antenna
+    double virtAntLeft = 0.0;           //cm to move virtual Antenna to the left (was renamed, keep your settings, name of direction was wrong)
     double virtAntForew = 0;            //cm to move virtual Antenna foreward
     double headingAngleCorrection = 90;
 
@@ -161,6 +161,11 @@ unsigned int LED_WIFI_time = 0;
 unsigned int LED_WIFI_pulse = 1000;   //light on in ms 
 unsigned int LED_WIFI_pause = 700;   //light off in ms
 boolean LED_WIFI_ON = false;
+
+//Speed pulse pin
+unsigned long prev_PWM_Millis = 0;
+   byte velocityPWM_Pin = 12;      // Velocity (MPH speed) PWM pin
+   int velocityPWM_Multiplier = 10; // PWM (MPH * multiplier)
 
 
 //WIFI+Ethernet
@@ -440,6 +445,9 @@ TaskHandle_t taskHandle_getUBX;
 // SETUP ------------------------------------------------------------------------------------------
 
 void setup()
+
+
+
 {
     delay(200);//waiting for stable power
     delay(50);//
@@ -478,10 +486,18 @@ void setup()
 	xTaskCreate(WiFi_handle_connection, "WiFiConnectHandle", 3072, NULL, 1, &taskHandle_WiFi_connect);
 	delay(500);
 
+ 
 
     //start comm F9P
     xTaskCreate(getUBX, "getUBX", 3072, NULL, 1, &taskHandle_getUBX);
     delay(500);
+
+
+// Speed pulse
+   pinMode( velocityPWM_Pin, OUTPUT);
+   ledcSetup( 0, velocityPWM_Multiplier, 8 );
+   ledcAttachPin( velocityPWM_Pin, 0 );
+   ledcWrite(0, 128);
 
     //init CMPS
     if (Set.CMPS14_present) {
@@ -511,9 +527,15 @@ void setup()
     NtripDataTime = millis();
 }
 
+
+
+
 // MAIN loop  -------------------------------------------------------------------------------------------
 
 void loop()
+
+
+
 {
     if (UBXRingCount1 == OGIfromUBX) {//no new UXB exists  
         if ((Set.DataTransVia < 5) && (Set.NtripClientBy == 1)) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1 
@@ -557,7 +579,15 @@ void loop()
         if (Set.sendHDT) { buildHDT(); }
         buildOGI();//should be build anyway, to decide if new data came in
 
-
+//Speed pulse output
+if (millis() - prev_PWM_Millis > 100){
+  prev_PWM_Millis = millis();
+  double mph_Pwm = float(UBXPVT1[UBXRingCount1].gSpeed) * 0.0022369363; 
+  // 1 gSpeed = 0.0036 km/h = 0.0022369363 mile/h 
+  mph_Pwm *= velocityPWM_Multiplier;
+  ledcWriteTone(0, mph_Pwm);
+}
+ 
     //transfer data via 0 = USB
         if (Set.DataTransVia < 5) {//use USB
            // if (Set.NtripClientBy == 1) { doSerialNTRIP(); } //gets USB NTRIP and sends to serial 1  
@@ -792,6 +822,9 @@ void WiFi_LED_blink(void* pvParameters)
         }
     }
 }
+
+
+
 
 //-------------------------------------------------------------------------------------------------
 /*

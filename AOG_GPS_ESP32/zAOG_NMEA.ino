@@ -647,5 +647,3 @@ void buildVTG() {
 
 	newVTG = true;
 }
-
-

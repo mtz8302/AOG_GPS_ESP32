@@ -279,4 +279,3 @@ void getUBX(void* pvParameters) {
 		}
 	}//for
 }//void getUBX
-
