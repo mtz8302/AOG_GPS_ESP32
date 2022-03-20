@@ -217,7 +217,7 @@ byte dualAntNoValueCount = 0, dualAntNoValueMax = 20;// if dual Ant value not va
 bool CMPS14GetNewData = true;
 double CMPS14CorrFactor = 0.0; 
 //CMPS IMU PGN - 211 - 0xD3
-byte IMUToAOG[] = { 0x80,0x81,0x7D,0xD3,4, 0,0,0,0, 15 };
+byte IMUToAOG[] = { 0x80,0x81,0x7D,0xD3,8, 0,0,0,0,0,0,0,0, 15 };
 int IMUToAOGSize = sizeof(IMUToAOG);
 
 /*//Kalman filter roll
