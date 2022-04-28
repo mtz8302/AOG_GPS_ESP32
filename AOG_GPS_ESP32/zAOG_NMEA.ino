@@ -625,6 +625,8 @@ void buildVTG() {
 	VTGBuffer[VTGdigit++] = (speed1000kmh / 10) + 48;
 	speed1000kmh = speed1000kmh % 10;
 	VTGBuffer[VTGdigit++] = speed1000kmh + 48;
+	
+	VTGBuffer[VTGdigit++] = 0x2C;//,
 
 	VTGBuffer[VTGdigit++] = 0x4B;//K
 
