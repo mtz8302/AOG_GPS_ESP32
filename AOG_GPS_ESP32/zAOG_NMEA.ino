@@ -74,7 +74,7 @@ $PAOGI
 
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
-
+/*
 
 void buildOGI() {
 	byte CRC = 0;
@@ -117,7 +117,7 @@ void buildOGI() {
 	//lat: xx min min . min/10 .. 4.5 digits
 	if (filterGPSpos || virtAntPosPresent) { templng = long(virtLat * 10000000); }
 	else { templng = UBXPVT1[UBXRingCount1].lat; }
-	if (GPSSet.debugmodeRAW) { Serial.print("buildOGI tempLat temLon,"); Serial.print(templng); Serial.print(",");}
+	if (Set.debugmodeRAW) { Serial.print("buildOGI tempLat temLon,"); Serial.print(templng); Serial.print(",");}
 	//N/S?
 	byte Sign = 0x53;//S
 	if (templng > 0) {Sign = 0x4E;}//N	
@@ -150,7 +150,7 @@ void buildOGI() {
 	//lon: xxx min min . min/10 .. 5.5 digits
 	if (filterGPSpos || virtAntPosPresent) { templng = long(virtLon * 10000000); }
 	else { templng = UBXPVT1[UBXRingCount1].lon; }
-	if (GPSSet.debugmodeRAW) { Serial.print(templng); Serial.print(","); }
+	if (Set.debugmodeRAW) { Serial.print(templng); Serial.print(","); }
 	//E/W?
 	if (templng < 0){Sign = 0x57;}//W
 	else{Sign= 0x45;	}//E
@@ -264,11 +264,9 @@ void buildOGI() {
 	OGIBuffer[OGIdigit++] = 0x2C;//,
 
 	//roll
-	double tempRoll = 0 - rollToAOG;
-	if (tempRoll < 0) {
-		OGIBuffer[OGIdigit++] = 0x2D;//-
-		tempRoll *= -1;
-	}
+	double tempRoll = rollToAOG;
+	if (tempRoll > 0) { OGIBuffer[OGIdigit++] = 0x2D; }//-//roll comes with wrong sign, so change
+	else { tempRoll *= -1; }
 	temp = byte(tempRoll / 10);
 	tempRoll = tempRoll - temp * 10;
 	OGIBuffer[OGIdigit++] = temp + 48;
@@ -305,10 +303,10 @@ void buildOGI() {
 	OGIfromUBX = UBXRingCount1;
 	newOGI = true;
 }
-
+*/
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+/*
 void buildHDT() {
 	byte CRC = 0;
 	byte tempbyt = 0;
@@ -531,7 +529,7 @@ void buildGGA() {
 
 
 	newGGA = true;
-
+*/
 	/*
 		if (debugmode) {
 			Serial.println("build OGI from PVT:");
@@ -540,13 +538,13 @@ void buildGGA() {
 			}
 			Serial.println();
 		}
-		*/
+		
 }
-
+*/
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+/*
 void buildVTG() {
 	byte tempbyt = 0, CRC = 0;
 
@@ -563,17 +561,10 @@ void buildVTG() {
 
 	//allways +48 to get ASCII: "0" = 48
 	double tempGPSHead;
-//	if (GPSSet.useMixedHeading) {
-//		if (GPSSet.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
+//	if (Set.useMixedHeading) {
+//		if (Set.debugmode) { Serial.print("mix Heading to OGI present: "); Serial.println(HeadingMix); }
 		tempGPSHead = HeadingMix; //decided in Heading calc
-/*	}
-	else {
-		if (dualGPSHeadingPresent) { tempGPSHead = HeadingRelPosNED; }
-		else {
-			if (GPSSet.debugmode) { Serial.print("VTG Heading to OGI present: "); Serial.println(HeadingVTG); }
-			tempGPSHead = HeadingVTG;
-		}
-	}*/
+
 	tempbyt = byte(tempGPSHead / 100);
 	tempGPSHead = tempGPSHead - tempbyt * 100;
 	VTGBuffer[VTGdigit++] = tempbyt + 48;
@@ -649,3 +640,5 @@ void buildVTG() {
 
 	newVTG = true;
 }
+
+*/
