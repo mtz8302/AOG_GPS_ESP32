@@ -1,6 +1,6 @@
 //ESP32 programm for GPS receivers to send NMEA to AgOpenGPS or other program 
 
-//Version für GPS Einheit in Klarsichtbox 206V + 6006
+//Version fÃ¼r GPS Einheit in Klarsichtbox 206V + 6006
 
 byte vers_nr = 54;
 char VersionTXT[150] = " - 25. Feb 2023 by MTZ8302<br>(single GPS only, BNO085 serial, CMPS14 via I2C, WiFi to Ethernet bridge, multiple WiFi networks)";
@@ -53,7 +53,7 @@ struct set {
     //Network---------------------------------------------------------------------------------------------
     //tractors WiFi or mobile hotspots
     char ssid1[24] = "Matthias A53 5G";           // WiFi network Client name
-    char password1[24] = "aveasillrac";                 // WiFi network password//Accesspoint name and password
+    char password1[24] = "";                 // WiFi network password//Accesspoint name and password
     char ssid2[24] = "Fendt_260V_Tablet";// WiFi network Client name
     char password2[24] = "Fendt_260V";                 // WiFi network password//Accesspoint name and password
     char ssid3[24] = "Deutz_6006_Tablet";           // WiFi network Client name
@@ -61,7 +61,7 @@ struct set {
     char ssid4[24] = "Fendt_209V";       // WiFi network Client name
     char password4[24] = "";                 // WiFi network password//Accesspoint name and password
     char ssid5[24] = "WLANHammer";    // WiFi network Client name
-    char password5[24] = "aveasillrac";                 // WiFi network password//Accesspoint name and password
+    char password5[24] = "";                 // WiFi network password//Accesspoint name and password
 
     char ssid_ap[24] = "Fendt_260V_Tablet";  // name of Access point, if no WiFi found, NO password!!
     char password_ap[24] = "Fendt_260V";  // name of Access point, if no WiFi found, NO password!!
@@ -74,8 +74,8 @@ struct set {
     char NtripHost[40] = "www.sapos-bw-ntrip.de";//  "80.154.101.74";    // Server IP or URL
     int  NtripPort = 2101;                // Server Port
     char NtripMountpoint[40] = "VRS_3_3G_BW";   // Mountpoint
-    char NtripUser[40] = "LW077_3";     // Username
-    char NtripPassword[40] = "bbtawh";    // Password
+    char NtripUser[40] = "";     // Username
+    char NtripPassword[40] = "";    // Password
 
     byte NtripSendWhichGGASentence = 2; // 0 = No Sentence will be sended / 1 = send fixed GGA Sentence from belowb/ 2 = GGA from GPS position will be sended
 
