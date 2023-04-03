@@ -5,7 +5,7 @@ void WiFi_handle_connection(void* pvParameters) {
     if (Set.DataTransVia >= 10) { vTaskDelay(5000); } //start Ethernet first, if needed for data transfer
     for (;;) {
         if (WiFi_connect_step == 0) {
-            if (Set.debugmode) { Serial.println("closing WiFi connection task"); }
+            if (Set.debugmode) { Serial.println("closing WiFi connection task"); Serial.println(); }
             task_WiFiConnectRunning = false;
             delay(1);
             vTaskDelete(NULL);
@@ -360,22 +360,24 @@ void WiFi_handle_connection(void* pvParameters) {
                         }
 
                         // if (Set.debugmode) { Serial.print("got AOG data via WiFi. packet lenght: "); Serial.println(packet.length()); }
-                        if ((Eth_connect_step == 0) && (Set.bridge_AOG_UDP_Eth_to_WiFi))
-                        {
-                            Eth_udpRoof.beginPacket(Eth_ipDestination, Set.PortDestination);
-                            Eth_udpRoof.write(packet.data(), packet.length());
-                            Eth_udpRoof.endPacket();
+                        if (Set.WiFi_AOG_data_bridge) {                        
+                            byte nextBridgeDataRingCountIn = (BridgeData8888RingCountIn + 1) % BridgeArraySize;
+                            BridgePacket8888Length[nextBridgeDataRingCountIn] = packet.length();
+                            for (unsigned int i = 0; i < BridgePacket8888Length[nextBridgeDataRingCountIn]; i++) {
+                                BridgeData8888[nextBridgeDataRingCountIn][i] = packet.data()[i];
+                            }
+                            BridgeData8888RingCountIn = nextBridgeDataRingCountIn;
                         }
                     });  // end of onPacket call
                 delay(2);
-                if (Set.bridge_AOG_UDP_Eth_to_WiFi) { WiFi_connect_step++; }
+                if (Set.WiFi_AOG_data_bridge) { WiFi_connect_step++; }
                 else {
                     if ((Set.NtripClientBy == 1) && (Set.DataTransVia > 5) && (Set.DataTransVia < 10)) { WiFi_connect_step = 70; }
                     else { WiFi_connect_step = 100; }
                 }
                 break;
 
-            case 55://init WiFi UDP listening to Autosteer
+            case 55://init WiFi UDP listening to other modules port 9999
                 if (WiFiUDPBridgeToAOG.listen(Set.PortDestination)) {
                     Serial.print("UDP listening to other modules destination port: ");
                     Serial.println(Set.PortDestination);
@@ -384,62 +386,18 @@ void WiFi_handle_connection(void* pvParameters) {
                 break;
 
             case 56:
-                // UDP message from AgIO packet handling: AutoSteer
+                // UDP message from other modules packet handling port 9999
                 WiFiUDPBridgeToAOG.onPacket([](AsyncUDPPacket packet)
                     {
-                        if (Set.bridge_AOG_UDP_Eth_to_WiFi){
-                            BridgeDataRingCountIn = (BridgeDataRingCountIn + 1) % BridgeArraySize;
-                            BridgePacketLength[BridgeDataRingCountIn] = packet.length();                            
-                            for (unsigned int i = 0; i < BridgePacketLength[BridgeDataRingCountIn]; i++) {
-                                BridgeData[BridgeDataRingCountIn][i] = packet.data()[i];
+                        if (Set.WiFi_AOG_data_bridge){
+                            byte nextBridgeDataRingCountIn = (BridgeData9999RingCountIn + 1) % BridgeArraySize;
+                            BridgePacket9999Length[nextBridgeDataRingCountIn] = packet.length();                            
+                            for (unsigned int i = 0; i < BridgePacket9999Length[nextBridgeDataRingCountIn]; i++) {
+                                BridgeData9999[nextBridgeDataRingCountIn][i] = packet.data()[i];
                             }
+                            BridgeData9999RingCountIn = nextBridgeDataRingCountIn;
                         }
                     });  // end of onPacket call
-/*                WiFi_connect_step++;
-                break;
-
-            case 57://init WiFi UDP listening to IMU
-                if (WiFiUDPIMUToAOG.listen(Set.PortFromIMU)) {
-                    Serial.print("UDP listening to IMU port: ");
-                    Serial.println(Set.PortFromIMU);
-                }
-                WiFi_connect_step++;
-                break;
-
-            case 58:
-                // UDP message from AgIO packet handling: IMU
-                WiFiUDPIMUToAOG.onPacket([](AsyncUDPPacket packet)
-                    {
-                        if (Eth_connect_step == 0) {
-                            Eth_udpRoof.beginPacket(Eth_ipDestination, Set.PortDestination);
-                            Eth_udpRoof.write(packet.data(), packet.length());
-                            Eth_udpRoof.endPacket();
-                        }
-                    });  // end of onPacket call
-                WiFi_connect_step++;
-                break;
-
-            case 59://init WiFi UDP listening to SectionControl
-                if (WiFiUDPSCToAOG.listen(Set.PortFromSC)) {
-                    Serial.print("UDP listening to section control port: ");
-                    Serial.println(Set.PortFromSC);
-                }
-                WiFi_connect_step++;
-                break;
-
-            case 60:
-                // UDP message from AgIO packet handling: Section Control
-                WiFiUDPSCToAOG.onPacket([](AsyncUDPPacket packet)
-                    {
-                        if (Eth_connect_step == 0) {
-                            Serial.println("got SC data from WiFi, send via Ethernet now");
-                            Eth_udpSC.beginPacket(Eth_ipDestination, Set.PortDestination);
-                            Eth_udpSC.write(packet.data(), packet.length());
-                            Eth_udpSC.endPacket();
-                        }
-                    });  // end of onPacket call
-
-*/
                 if ((Set.NtripClientBy == 1) && (Set.DataTransVia > 5) && (Set.DataTransVia < 10)) { WiFi_connect_step = 70; }
                 else { WiFi_connect_step = 100; }
                 break;
@@ -646,7 +604,7 @@ void Eth_handle_connection(void* pvParameters) {
         vTaskDelay(320);
 
         if ((Eth_connect_step > 240) || (Eth_connect_step == 0)) {
-            Serial.println("closing Ethernet connection task");
+            Serial.println("closing Ethernet connection task"); Serial.println();
             delay(1);
             vTaskDelete(NULL);
             delay(1);
@@ -678,7 +636,7 @@ void Eth_handle_connection(void* pvParameters) {
                     if (Set.DataTransVia == 10) {
                         Set.DataTransVia = 7; //change DataTransfer to WiFi 
                         vTaskDelay(5);//make other tasks seeing change in DataTransVia
-                        if (task_Eth_NTRIP_running) { vTaskDelete(taskHandle_Eth_NTRIP); delay(5); task_Eth_NTRIP_running = false; }
+                       // if (task_Eth_NTRIP_running) { vTaskDelete(taskHandle_Eth_NTRIP); delay(5); task_Eth_NTRIP_running = false; }
 
                         if ((Set.NtripClientBy == 1) && (!WiFiUDPRunning)) {
                             if (WiFi_connect_step >= 20) { WiFi_connect_step = 4; }
@@ -779,23 +737,26 @@ void Eth_handle_connection(void* pvParameters) {
                              break;                             
                              */
 
-                /*
+                
             //Webserver start
             case 100:
                 //start Server for Webinterface
-                EthStartServer();
+               // EthStartServer();
+                //if (Eth_Server)
                 Eth_connect_step++;
                 break;
 
             case 101:
-                WebIOTimeOut = millis() + (long(Set.timeoutWebIO) * 60000);
-                xTaskCreate(doEthWebinterface, "EthWebIOHandle", 5000, NULL, 1, &taskHandle_EthWebIO);
-                delay(300);
+               // WebIOTimeOut = millis() + (long(Set.timeoutWebIO) * 60000);
+                //xTaskCreate(doEthWebinterface, "EthWebIOHandle", 5000, NULL, 1, &taskHandle_EthWebIO);
+                //delay(300);
                 Eth_connect_step = 0;
                 break;
-                */
+                
             default:
                 Eth_connect_step++;
+                Serial.print("default was called at Ethernet connection task! Eth_connect_step: ");
+                Serial.println(Eth_connect_step);
                 break;
             }//switch Eth connection step
         }

@@ -1,5 +1,5 @@
 // Wifi variables & definitions
-char HTML_String[55000];
+char HTML_String[25000];//55000 25.3.: 19603 bytes
 int action;
 long temLong = 0;
 double temDoub = 0;
@@ -16,7 +16,7 @@ void EthStartServer() {
 
     Eth_Server.on("/", HTTP_GET, []() {EthhandleRoot(); });
 
- /*   //file selection for firmware update
+    //file selection for firmware update
     Eth_Server.on("/serverIndex", HTTP_GET, []() {
         Eth_Server.sendHeader("Connection", "close");
         Eth_Server.send(200, "text/html", serverIndex);
@@ -50,7 +50,7 @@ void EthStartServer() {
                 }
             }
         });
-*//*
+
     Eth_Server.onNotFound(EthhandleNotFound);
 
     Eth_Server.begin();
@@ -63,12 +63,9 @@ void doEthWebinterface(void* pvParameters) {
     Serial.println("starting Ethernet Webinterface");
     for (;;) {
         Eth_Server.handleClient(); //does the Webinterface
-        if (WebIOTimeOut < millis() + long((Set.timeoutWebIO * 60000)) - 3000) {//not called in the last 3 sec
-            vTaskDelay(1500);
-        }
-        else {
-            vTaskDelay(30);
-        }
+
+        vTaskDelay(30);
+        //}
         if ((now > WebIOTimeOut) && (Set.timeoutWebIO != 255)) {
             WebIORunning = false;
             Eth_Server.close();
@@ -125,19 +122,20 @@ void EthhandleNotFound() {
     if (Set.debugmode) { Serial.println("redirecting from 404 not found to Webpage root"); }
 
 }
-
 */
+
 //-------------------------------------------------------------------------------------------------
 //7. Maerz 2021
 
 void doWebinterface(void* pvParameters) {
     for (;;) {
         WiFi_Server.handleClient(); //does the Webinterface
-        if (WebIOTimeOut < millis() + long((Set.timeoutWebIO * 60000)) - 3000) {//not called in the last 3 sec
-            vTaskDelay(1500);
+        if (WebIOLastUsePlus3 < millis()) {//not called in the last 3 sec
+            //Serial.println("Webinterface no client for 3 sec");
+            vTaskDelay(1000);
         }
         else {
-            vTaskDelay(30);
+            vTaskDelay(20);
         }
         if ((now > WebIOTimeOut) && (Set.timeoutWebIO != 255)) {
             WebIORunning = false;
@@ -157,9 +155,12 @@ void handleRoot() {
     make_HTML01();
     WiFi_Server.sendHeader("Connection", "close");
     WiFi_Server.send(200, "text/html", HTML_String);
-    WebIOTimeOut = millis() + long((Set.timeoutWebIO * 60000));
+    WebIOLastUsePlus3 = 3000 + millis();
+    WebIOTimeOut = WebIOLastUsePlus3 + long((Set.timeoutWebIO * 60000));
     if (Set.debugmode) {
-        Serial.println("Webpage root"); Serial.print("Timeout WebIO: "); Serial.println(WebIOTimeOut);
+        Serial.print("used size of HTML string: "); Serial.println(strlen(HTML_String));
+        Serial.println("Webpage root");
+        Serial.print("Timeout WebIO: "); Serial.println(WebIOTimeOut);
     }
     process_Request();
 }
@@ -377,343 +378,393 @@ void process_Request()
             temInt = WiFi_Server.arg(n).toInt();
             Set.Eth_mac[5] = byte(temInt);
         }
-/*
-        if (WiFi_Server.argName(n) == "GPSPosCorrByRoll") {
-            if (WiFi_Server.arg(n) == "true") { Set.GPSPosCorrByRoll = 1; }
-            else { Set.GPSPosCorrByRoll = 0; }
-        }
+        /*
+                if (WiFi_Server.argName(n) == "GPSPosCorrByRoll") {
+                    if (WiFi_Server.arg(n) == "true") { Set.GPSPosCorrByRoll = 1; }
+                    else { Set.GPSPosCorrByRoll = 0; }
+                }
 
-        if (WiFi_Server.argName(n) == "AntDist") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub <= 1000) && (temDoub >= 0)) { Set.AntDist = temDoub; }
-        }
-        if (WiFi_Server.argName(n) == "AntHight") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub <= 600) && (temDoub >= 0)) { Set.AntHight = temDoub; }
-        }
-        if (WiFi_Server.argName(n) == "AntLeft") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub <= 1000) && (temDoub >= -1000)) { Set.virtAntLeft = temDoub; }
-        }
-        if (WiFi_Server.argName(n) == "AntForew") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub <= 1000) && (temDoub >= -1000)) { Set.virtAntForew = temDoub; }
-        }
-        if (WiFi_Server.argName(n) == "AntDistDevFact") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub <= 5) && (temDoub >= 1.0)) { Set.AntDistDeviationFactor = temDoub; }
-        }
+                if (WiFi_Server.argName(n) == "AntDist") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub <= 1000) && (temDoub >= 0)) { Set.AntDist = temDoub; }
+                }
+                if (WiFi_Server.argName(n) == "AntHight") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub <= 600) && (temDoub >= 0)) { Set.AntHight = temDoub; }
+                }
+                if (WiFi_Server.argName(n) == "AntLeft") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub <= 1000) && (temDoub >= -1000)) { Set.virtAntLeft = temDoub; }
+                }
+                if (WiFi_Server.argName(n) == "AntForew") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub <= 1000) && (temDoub >= -1000)) { Set.virtAntForew = temDoub; }
+                }
+                if (WiFi_Server.argName(n) == "AntDistDevFact") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub <= 5) && (temDoub >= 1.0)) { Set.AntDistDeviationFactor = temDoub; }
+                }
 
-        if (WiFi_Server.argName(n) == "UBXFlagCheck") {
-            if (WiFi_Server.arg(n) == "true") { Set.checkUBXFlags = 1; }
-            else { Set.checkUBXFlags = 0; }
-        }
-        if (WiFi_Server.argName(n) == "GPSPosFilter") {
-            if (WiFi_Server.arg(n) == "true") { Set.filterGPSposOnWeakSignal = 1; }
-            else { Set.filterGPSposOnWeakSignal = 0; }
-        }
-        if (WiFi_Server.argName(n) == "HeadAngleCorr") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub < 360) && (temDoub >= 0)) { Set.headingAngleCorrection = temDoub; }
-        }
-        if (WiFi_Server.argName(n) == "maxHeadChang") {
-            temLong = WiFi_Server.arg(n).toInt();
-            if ((temLong < 100) && (temLong >= 2)) { Set.MaxHeadChangPerSec = byte(temLong); }
-        }
-        if (WiFi_Server.argName(n) == "RollAngleCorr") {
-            temDoub = WiFi_Server.arg(n).toDouble();
-            if ((temDoub < 45) && (temDoub >= -45)) { Set.DualRollAngleCorrection = temDoub; }
-        }
-      */  /*      if (WiFi_Server.argName(n) == "NtripHost") {
-                  for (int i = 0; i < 40; i++) Set.NtripHost[i] = 0x00;
-                  temInt = WiFi_Server.arg(n).length() + 1;
-                  WiFi_Server.arg(n).toCharArray(Set.NtripHost, temInt);
-              }
-              if (WiFi_Server.argName(n) == "NtripMountpoint") {
-                  for (int i = 0; i < 40; i++) Set.NtripMountpoint[i] = 0x00;
-                  temInt = WiFi_Server.arg(n).length() + 1;
-                  WiFi_Server.arg(n).toCharArray(Set.NtripMountpoint, temInt);
-              }
-              if (WiFi_Server.argName(n) == "NtripUser") {
-                  for (int i = 0; i < 40; i++) Set.NtripUser[i] = 0x00;
-                  temInt = WiFi_Server.arg(n).length() + 1;
-                  WiFi_Server.arg(n).toCharArray(Set.NtripUser, temInt);
-              }
-              if (WiFi_Server.argName(n) == "NtripPassword") {
-                  for (int i = 0; i < 40; i++) Set.NtripPassword[i] = 0x00;
-                  temInt = WiFi_Server.arg(n).length() + 1;
-                  WiFi_Server.arg(n).toCharArray(Set.NtripPassword, temInt);
-              }
-              if (WiFi_Server.argName(n) == "NtripFixGGASentence") {
-                  for (int i = 0; i < 100; i++) Set.NtripFixGGASentence[i] = 0x00;
-                  temInt = WiFi_Server.arg(n).length() + 1;
-                  WiFi_Server.arg(n).toCharArray(Set.NtripFixGGASentence, temInt);
-              }
-              if (WiFi_Server.argName(n) == "NtripPort") {
-                  temLong = WiFi_Server.arg(n).toInt();
-                  if ((temLong <= 32000) && (temLong >= 0)) { Set.NtripPort = int(temLong); }
-              }
-              if (WiFi_Server.argName(n) == "NtripGGASendRate") {
-                  temLong = WiFi_Server.arg(n).toInt();
-                  if ((temLong <= 200) && (temLong >= 2)) { Set.NtripGGASendRate = byte(temLong); }
-              }
-              if (WiFi_Server.argName(n) == "NtripSendWhichGGASentence") {
-                  Set.NtripSendWhichGGASentence = byte(WiFi_Server.arg(n).toInt());
-              }
-              if (WiFi_Server.argName(n) == "NtripClientBy") {
-                  temLong = WiFi_Server.arg(n).toInt();
-                  switch (temLong) {
-                  case 0://NTRIP off
-                      Set.NtripClientBy = 0;
-                      break;
-                  case 1://AOG WiFi NTRIP
-                      Set.NtripClientBy = 1;
-                      if (Set.DataTransVia > 5) {
-                          if (Set.DataTransVia < 10) {
-                              //start WiFI UDP
-                              if (WiFi_udpNtrip.listen(Set.AOGNtripPort))
-                              {
-                                  Serial.print("NTRIP UDP Listening to port: ");
-                                  Serial.println(Set.AOGNtripPort);
-                                  Serial.println();
-                              }
-                              vTaskDelay(100);
-                              delay(10);//100
-                              // UDP NTRIP packet handling
-                              WiFi_udpNtrip.onPacket([](AsyncUDPPacket packet)
-                                  {
-                                      if (Set.debugmode) { Serial.println("got NTRIP data"); }
-                                      for (unsigned int i = 0; i < packet.length(); i++)
+                if (WiFi_Server.argName(n) == "UBXFlagCheck") {
+                    if (WiFi_Server.arg(n) == "true") { Set.checkUBXFlags = 1; }
+                    else { Set.checkUBXFlags = 0; }
+                }
+                if (WiFi_Server.argName(n) == "GPSPosFilter") {
+                    if (WiFi_Server.arg(n) == "true") { Set.filterGPSposOnWeakSignal = 1; }
+                    else { Set.filterGPSposOnWeakSignal = 0; }
+                }
+                if (WiFi_Server.argName(n) == "HeadAngleCorr") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub < 360) && (temDoub >= 0)) { Set.headingAngleCorrection = temDoub; }
+                }
+                if (WiFi_Server.argName(n) == "maxHeadChang") {
+                    temLong = WiFi_Server.arg(n).toInt();
+                    if ((temLong < 100) && (temLong >= 2)) { Set.MaxHeadChangPerSec = byte(temLong); }
+                }
+                if (WiFi_Server.argName(n) == "RollAngleCorr") {
+                    temDoub = WiFi_Server.arg(n).toDouble();
+                    if ((temDoub < 45) && (temDoub >= -45)) { Set.DualRollAngleCorrection = temDoub; }
+                }
+              */  /*      if (WiFi_Server.argName(n) == "NtripHost") {
+                          for (int i = 0; i < 40; i++) Set.NtripHost[i] = 0x00;
+                          temInt = WiFi_Server.arg(n).length() + 1;
+                          WiFi_Server.arg(n).toCharArray(Set.NtripHost, temInt);
+                      }
+                      if (WiFi_Server.argName(n) == "NtripMountpoint") {
+                          for (int i = 0; i < 40; i++) Set.NtripMountpoint[i] = 0x00;
+                          temInt = WiFi_Server.arg(n).length() + 1;
+                          WiFi_Server.arg(n).toCharArray(Set.NtripMountpoint, temInt);
+                      }
+                      if (WiFi_Server.argName(n) == "NtripUser") {
+                          for (int i = 0; i < 40; i++) Set.NtripUser[i] = 0x00;
+                          temInt = WiFi_Server.arg(n).length() + 1;
+                          WiFi_Server.arg(n).toCharArray(Set.NtripUser, temInt);
+                      }
+                      if (WiFi_Server.argName(n) == "NtripPassword") {
+                          for (int i = 0; i < 40; i++) Set.NtripPassword[i] = 0x00;
+                          temInt = WiFi_Server.arg(n).length() + 1;
+                          WiFi_Server.arg(n).toCharArray(Set.NtripPassword, temInt);
+                      }
+                      if (WiFi_Server.argName(n) == "NtripFixGGASentence") {
+                          for (int i = 0; i < 100; i++) Set.NtripFixGGASentence[i] = 0x00;
+                          temInt = WiFi_Server.arg(n).length() + 1;
+                          WiFi_Server.arg(n).toCharArray(Set.NtripFixGGASentence, temInt);
+                      }
+                      if (WiFi_Server.argName(n) == "NtripPort") {
+                          temLong = WiFi_Server.arg(n).toInt();
+                          if ((temLong <= 32000) && (temLong >= 0)) { Set.NtripPort = int(temLong); }
+                      }
+                      if (WiFi_Server.argName(n) == "NtripGGASendRate") {
+                          temLong = WiFi_Server.arg(n).toInt();
+                          if ((temLong <= 200) && (temLong >= 2)) { Set.NtripGGASendRate = byte(temLong); }
+                      }
+                      if (WiFi_Server.argName(n) == "NtripSendWhichGGASentence") {
+                          Set.NtripSendWhichGGASentence = byte(WiFi_Server.arg(n).toInt());
+                      }
+                      if (WiFi_Server.argName(n) == "NtripClientBy") {
+                          temLong = WiFi_Server.arg(n).toInt();
+                          switch (temLong) {
+                          case 0://NTRIP off
+                              Set.NtripClientBy = 0;
+                              break;
+                          case 1://AOG WiFi NTRIP
+                              Set.NtripClientBy = 1;
+                              if (Set.DataTransVia > 5) {
+                                  if (Set.DataTransVia < 10) {
+                                      //start WiFI UDP
+                                      if (WiFi_udpNtrip.listen(Set.AOGNtripPort))
                                       {
-                                          Serial1.write(packet.data()[i]);
+                                          Serial.print("NTRIP UDP Listening to port: ");
+                                          Serial.println(Set.AOGNtripPort);
+                                          Serial.println();
                                       }
-                                      NtripDataTime = millis();
-                                  });  // end of onPacket call
-                              WiFiUDPRunning = true;
-                          }
-                          else {
-                              //Ethernet
-                              if (WiFiUDPRunning) { WiFi_udpNtrip.close(); WiFiUDPRunning = false; }
-                          }
-                      }
-                      break;
-                  case 2://ESP32 NTRIP client
-                      Set.NtripClientBy = 2;
-                      if (!task_NTRIP_Client_running) {
-                          Ntrip_restart = 1;
-                          NtripDataTime = millis();
-                          Serial.println("creating NTRIP task on core 1");
-                          xTaskCreatePinnedToCore(NTRIP_Client_Code, "Core1", 3072, NULL, 1, &taskHandle_WiFi_NTRIP, 1);
-                          delay(500);
-                      }
-                      break;
-                  }
-              }
-
-             if (WiFi_Server.argName(n) == "seOGI") {
-               if (WiFi_Server.arg(n) == "true") { Set.sendOGI = 1; }
-               else {
-                   if (Set.sendGGA == 0) { Set.sendOGI = 1; }
-                   else {
-                       Set.sendOGI = 0;//only switch off, if GGA is send
-                   }
-               }
-           } */
-      /*       if (WiFi_Server.argName(n) == "seGGA") {
-               if (WiFi_Server.arg(n) == "true") { Set.sendGGA = 1; }
-               else { Set.sendGGA = 0; }
-           }
-           if (WiFi_Server.argName(n) == "seVTG") {
-               if (WiFi_Server.arg(n) == "true") { Set.sendVTG = 1; }
-               else { Set.sendVTG = 0; }
-           }
-         if (WiFi_Server.argName(n) == "seHDT") {
-               if (WiFi_Server.arg(n) == "true") { Set.sendHDT = 1; }
-               else { Set.sendHDT = 0; }
-           }*/
-           if (WiFi_Server.argName(n) == "seIMU") {
-               if (WiFi_Server.arg(n) == "true") { Set.sendIMUPGN = 1; }
-               else { Set.sendIMUPGN = 0; }
-           }
-           if (WiFi_Server.argName(n) == "AgIOHeartBeat") {
-               if (WiFi_Server.arg(n) == "true") { Set.AgIOHeartbeat_answer = 1; }
-               else { Set.AgIOHeartbeat_answer = 0; }
-           }
-
-           if (WiFi_Server.argName(n) == "DataTransfVia") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong <= 20) && (temLong >= 0)) { Set.DataTransVia = byte(temLong); }
-               if (Set.DataTransVia == 10) {
-                   if (Eth_connect_step == 255) {
-                       Eth_connect_step = 10;
-                       xTaskCreate(Eth_handle_connection, "Core1EthConnectHandle", 3072, NULL, 1, &taskHandle_Eth_connect);
-                       delay(500);
-                   }
-               }
-               if (Set.NtripClientBy == 1) {
-                   if (Set.DataTransVia > 5) {
-                       if (Set.DataTransVia < 10) {
-                           //start WiFI UDP                
-                           if (WiFi_udpNtrip.listen(Set.AOGNtripPort))
-                           {
-                               Serial.print("NTRIP UDP Listening to port: ");
-                               Serial.println(Set.AOGNtripPort);
-                               Serial.println();
-                           }
-                           vTaskDelay(100);
-                           delay(10);//100
-                           // UDP NTRIP packet handling
-                           WiFi_udpNtrip.onPacket([](AsyncUDPPacket packet)
-                               {
-                                   if (Set.debugmode) { Serial.println("got NTRIP data"); }
-                                   for (unsigned int i = 0; i < packet.length(); i++)
-                                   {
-                                       Serial1.write(packet.data()[i]);
-                                   }
-                                   NtripDataTime = millis();
-                               });  // end of onPacket call
-                           WiFiUDPRunning = true;
-                           /*               if ((Set.NtripClientBy == 2) && (!task_Eth_NTRIP_running)) {
-                                              if (!task_NTRIP_Client_running) {
-                                                  Ntrip_restart = 1;
-                                                  NtripDataTime = millis();
-                                                  xTaskCreatePinnedToCore(NTRIP_Client_Code, "Core1", 3072, NULL, 1, &taskHandle_WiFi_NTRIP, 1);
-                                                  delay(500);
+                                      vTaskDelay(100);
+                                      delay(10);//100
+                                      // UDP NTRIP packet handling
+                                      WiFi_udpNtrip.onPacket([](AsyncUDPPacket packet)
+                                          {
+                                              if (Set.debugmode) { Serial.println("got NTRIP data"); }
+                                              for (unsigned int i = 0; i < packet.length(); i++)
+                                              {
+                                                  Serial1.write(packet.data()[i]);
                                               }
-                                          }
-                                      }
-                                      else {
-                                          //Ethernet
-                                          if (WiFiUDPRunning) { WiFi_udpNtrip.close(); WiFiUDPRunning = false; }
-                                          */
+                                              NtripDataTime = millis();
+                                          });  // end of onPacket call
+                                      WiFiUDPRunning = true;
+                                  }
+                                  else {
+                                      //Ethernet
+                                      if (WiFiUDPRunning) { WiFi_udpNtrip.close(); WiFiUDPRunning = false; }
+                                  }
+                              }
+                              break;
+                          case 2://ESP32 NTRIP client
+                              Set.NtripClientBy = 2;
+                              if (!task_NTRIP_Client_running) {
+                                  Ntrip_restart = 1;
+                                  NtripDataTime = millis();
+                                  Serial.println("creating NTRIP task on core 1");
+                                  xTaskCreatePinnedToCore(NTRIP_Client_Code, "Core1", 3072, NULL, 1, &taskHandle_WiFi_NTRIP, 1);
+                                  delay(500);
+                              }
+                              break;
+                          }
+                      }
+
+                     if (WiFi_Server.argName(n) == "seOGI") {
+                       if (WiFi_Server.arg(n) == "true") { Set.sendOGI = 1; }
+                       else {
+                           if (Set.sendGGA == 0) { Set.sendOGI = 1; }
+                           else {
+                               Set.sendOGI = 0;//only switch off, if GGA is send
+                           }
                        }
-                   }
-               }
-           }
+                   } */
+                   /*       if (WiFi_Server.argName(n) == "seGGA") {
+                            if (WiFi_Server.arg(n) == "true") { Set.sendGGA = 1; }
+                            else { Set.sendGGA = 0; }
+                        }
+                        if (WiFi_Server.argName(n) == "seVTG") {
+                            if (WiFi_Server.arg(n) == "true") { Set.sendVTG = 1; }
+                            else { Set.sendVTG = 0; }
+                        }
+                      if (WiFi_Server.argName(n) == "seHDT") {
+                            if (WiFi_Server.arg(n) == "true") { Set.sendHDT = 1; }
+                            else { Set.sendHDT = 0; }
+                        }*/
+        if (WiFi_Server.argName(n) == "sePANDA") {
+            if (WiFi_Server.arg(n) == "1") { Set.sendPANDA = 1; }
+            else { Set.sendPANDA = 0; }
+        }
+        if (WiFi_Server.argName(n) == "seIMU") {
+            if (WiFi_Server.arg(n) == "true") { Set.sendIMUPGN = 1; }
+            else { Set.sendIMUPGN = 0; }
+        }
+        if (WiFi_Server.argName(n) == "AgIOHeartBeat") {
+            if (WiFi_Server.arg(n) == "true") { Set.AgIOHeartbeat_answer = 1; }
+            else { Set.AgIOHeartbeat_answer = 0; }
+        }
 
-           if (WiFi_Server.argName(n) == "IMUtype") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong <= 20) && (temLong >= 0)) { Set.IMUType = byte(temLong); }
-               if (Set.IMUType == 1) { init_BNO_serial(); }
-               if (Set.IMUType == 2) { init_CMPS14(); }
-           }         
-    
+        if (WiFi_Server.argName(n) == "DataTransfVia") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong <= 20) && (temLong >= 0)) { Set.DataTransVia = byte(temLong); }
+            if (Set.DataTransVia == 10) {
+                if (Eth_connect_step == 255) {
+                    Eth_connect_step = 10;
+                    xTaskCreate(Eth_handle_connection, "Core1EthConnectHandle", 3072, NULL, 1, &taskHandle_Eth_connect);
+                    delay(500);
+                }
+            }
+            if (Set.NtripClientBy == 1) {
+                if (Set.DataTransVia > 5) {
+                    if (Set.DataTransVia < 10) {
+                        //start WiFI UDP                
+                        if (WiFi_udpNtrip.listen(Set.AOGNtripPort))
+                        {
+                            Serial.print("NTRIP UDP Listening to port: ");
+                            Serial.println(Set.AOGNtripPort);
+                            Serial.println();
+                        }
+                        vTaskDelay(100);
+                        delay(10);//100
+                        // UDP NTRIP packet handling
+                        WiFi_udpNtrip.onPacket([](AsyncUDPPacket packet)
+                            {
+                                if (Set.debugmode) { Serial.println("got NTRIP data"); }
+                                for (unsigned int i = 0; i < packet.length(); i++)
+                                {
+                                    Serial1.write(packet.data()[i]);
+                                }
+                                NtripDataTime = millis();
+                            });  // end of onPacket call
+                        WiFiUDPRunning = true;
+                        /*               if ((Set.NtripClientBy == 2) && (!task_Eth_NTRIP_running)) {
+                                           if (!task_NTRIP_Client_running) {
+                                               Ntrip_restart = 1;
+                                               NtripDataTime = millis();
+                                               xTaskCreatePinnedToCore(NTRIP_Client_Code, "Core1", 3072, NULL, 1, &taskHandle_WiFi_NTRIP, 1);
+                                               delay(500);
+                                           }
+                                       }
+                                   }
+                                   else {
+                                       //Ethernet
+                                       if (WiFiUDPRunning) { WiFi_udpNtrip.close(); WiFiUDPRunning = false; }
+                                       */
+                    }
+                }
+            }
+        }
 
-           if (WiFi_Server.argName(n) == "swapRollPitch") {
-               if (WiFi_Server.arg(n) == "true") { Set.swapRollPitch = true; }
-               else { Set.swapRollPitch = false; }
-           }
+        if (WiFi_Server.argName(n) == "IMUtype") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong <= 20) && (temLong >= 0)) { Set.IMUType = byte(temLong); }
+            if (Set.IMUType == 0) {    //no IMU
+                for (byte a = 0; a < 10; a++) {
+                    IMUHeading[a] = 65535;
+                    IMURoll[a] = 0; //8888;
+                    IMUPitch[a] = 0;
+                    IMUYawRate[a] = 0;
+                }
+                itoa(65535, imuHeading, 10);       //65535 is max value to stop AgOpen using IMU in Panda
+                IMUnextReadTime = 4294967294;
+            }
+            if (Set.IMUType == 1) { init_BNO_serial(); }
+            if (Set.IMUType == 2) { init_CMPS14(); }
+        }
 
-           if (WiFi_Server.argName(n) == "RollAngleCorrCMPS") {
-               temDoub = WiFi_Server.arg(n).toDouble();
-               if ((temDoub < 45) && (temDoub >= -45)) { Set.IMURollCorrection = temDoub; }
-           }
-           if (WiFi_Server.argName(n) == "HeadAngleCorrCMPS") {
-               temDoub = WiFi_Server.arg(n).toDouble();
-               if ((temDoub < 360) && (temDoub >= 0)) { Set.IMUHeadingCorrection = temDoub; }
-           }
+        if (WiFi_Server.argName(n) == "IMUinvertRoll") {
+            if (WiFi_Server.arg(n) == "true") { Set.IMUinvertRoll = true; }
+            else { Set.IMUinvertRoll = false; }
+        }
 
-           if (WiFi_Server.argName(n) == "debugmode") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmode = true; }
-               else { Set.debugmode = false; }
-           }
- /*          if (WiFi_Server.argName(n) == "debugmUBX") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmodeUBX = true; }
-               else { Set.debugmodeUBX = false; }
-           }
-           if (WiFi_Server.argName(n) == "debugmHead") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmodeHeading = true; }
-               else { Set.debugmodeHeading = false; }
-           }
-           if (WiFi_Server.argName(n) == "debugmVirtAnt") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmodeVirtAnt = true; }
-               else { Set.debugmodeVirtAnt = false; }
-           }
-           if (WiFi_Server.argName(n) == "debugmFiltPos") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmodeFilterPos = true; }
-               else { Set.debugmodeFilterPos = false; }
-           }
+        if (WiFi_Server.argName(n) == "IMUswapRollPitch") {
+            if (WiFi_Server.arg(n) == "true") { Set.IMUswapRollPitch = true; }
+            else { Set.IMUswapRollPitch = false; }
+        }
 
-           if (WiFi_Server.argName(n) == "debugmNtrip") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmodeNTRIP = true; }
-               else { Set.debugmodeNTRIP = false; }
-           }
-           if (WiFi_Server.argName(n) == "debugmRAW") {
-               if (WiFi_Server.arg(n) == "true") { Set.debugmodeRAW = true; }
-               else { Set.debugmodeRAW = false; }
-           }
-*/
-           if (WiFi_Server.argName(n) == "WiFiLEDon") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.LEDWiFi_ON_Level = byte(temLong);
-                   if (LED_WIFI_ON) { digitalWrite(Set.LEDWiFi_PIN, Set.LEDWiFi_ON_Level); }
-                   else { digitalWrite(Set.LEDWiFi_PIN, !Set.LEDWiFi_ON_Level); }
-               }
-           }
+        if (WiFi_Server.argName(n) == "RollAngleCorrCMPS") {
+            temDoub = WiFi_Server.arg(n).toDouble();
+            if ((temDoub < 45) && (temDoub >= -45)) { Set.IMURollCorrection = temDoub; }
+        }
+        if (WiFi_Server.argName(n) == "HeadAngleCorrCMPS") {
+            temDoub = WiFi_Server.arg(n).toDouble();
+            if ((temDoub < 360) && (temDoub >= 0)) { Set.CMPSHeadingCorrection = temDoub; }
+        }
+        if (WiFi_Server.argName(n) == "GPS2USB") {
+            if (WiFi_Server.arg(n) == "true") { Set.bridgeGPStoUSB = true; }
+            else { Set.bridgeGPStoUSB = false; }
+        }
+        if (WiFi_Server.argName(n) == "BaudrGPS") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong <= 20) && (temLong >= 0)) {
+                Set.GPS_baudrate_Nr = byte(temLong);
+                Serial1.updateBaudRate(baudrates[Set.GPS_baudrate_Nr]);
+                delay(50);
+            }
+        }
+        if (WiFi_Server.argName(n) == "BaudrUSB") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong <= 20) && (temLong >= 0)) {
+                Set.USB_baudrate_Nr = byte(temLong);
+                Serial.updateBaudRate(baudrates[Set.USB_baudrate_Nr]);
+                delay(50);
+            }
+        }
+        if (WiFi_Server.argName(n) == "GPSGetBaud") {
+            if (Set.debugmode) { Serial.println("Get GPS serial baudrate pressed in webinterface"); }
+            GPSGetBaudrate();
+        }
 
-           if (WiFi_Server.argName(n) == "LED") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.LEDWiFi_PIN = byte(temLong);
-                   pinMode(Set.LEDWiFi_PIN, OUTPUT);
-                   if (LED_WIFI_ON) { digitalWrite(Set.LEDWiFi_PIN, Set.LEDWiFi_ON_Level); }
-                   else { digitalWrite(Set.LEDWiFi_PIN, !Set.LEDWiFi_ON_Level); }
-               }
-           }
-           if (WiFi_Server.argName(n) == "TX1") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.TX1 = byte(temLong);
-                   Serial1.end();
-                   delay(20);
-                   Serial1.begin(115200, SERIAL_8N1, Set.RX1, Set.TX1);
-                   delay(5);
-               }
-           }
-           if (WiFi_Server.argName(n) == "RX1") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.RX1 = byte(temLong);
-                   Serial1.end();
-                   delay(20);
-                   Serial1.begin(115200, SERIAL_8N1, Set.RX1, Set.TX1);
-                   delay(5);
-               }
-           }
-           if (WiFi_Server.argName(n) == "TX2") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.TX2 = byte(temLong);
-                   Serial2.end();
-                   delay(20);
-                   Serial2.begin(115200, SERIAL_8N1, Set.RX2, Set.TX2);
-                   delay(5);
-               }
-           }
-           if (WiFi_Server.argName(n) == "RX2") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.RX2 = byte(temLong);
-                   Serial2.end();
-                   delay(20);
-                   Serial2.begin(115200, SERIAL_8N1, Set.RX2, Set.TX2);
-                   delay(5);
-               }
-           }
-           if (WiFi_Server.argName(n) == "WiFiResc") {
-               temLong = WiFi_Server.arg(n).toInt();
-               if ((temLong >= 0) && (temLong <= 40)) {
-                   Set.LEDWiFi_PIN = byte(temLong);
-                   pinMode(Set.Button_WiFi_rescan_PIN, INPUT_PULLUP);
-               }
-           }
-           if (action == ACTION_RESTART) {
-               Serial.println("reboot ESP32: selected by webinterface");
-               EEprom_block_restart();//prevents from restarting, when webpage is reloaded. Is set to 0, when other ACTION than restart is called
-               delay(2000);
-               ESP.restart();
-           }
+    /*    if (WiFi_Server.argName(n) == "IMUTimeShift") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong <= 20) && (temLong >= 0)) {
+                IMUDataTimeShiftTest = 11 - byte(temLong);
+            }
+            if (IMUDataTimeShiftTest == 10) { IMUDataTimeShiftTest = 0; }
+            Serial.print("IMU data time shift changed in webinterface to: "); Serial.println(IMUDataTimeShiftTest);
+        }*/
+        if (WiFi_Server.argName(n) == "debugmode") {
+            if (WiFi_Server.arg(n) == "true") { Set.debugmode = true; }
+            else { Set.debugmode = false; }
+        }
+        /*          if (WiFi_Server.argName(n) == "debugmUBX") {
+                      if (WiFi_Server.arg(n) == "true") { Set.debugmodeUBX = true; }
+                      else { Set.debugmodeUBX = false; }
+                  }
+                  if (WiFi_Server.argName(n) == "debugmHead") {
+                      if (WiFi_Server.arg(n) == "true") { Set.debugmodeHeading = true; }
+                      else { Set.debugmodeHeading = false; }
+                  }
+                  if (WiFi_Server.argName(n) == "debugmVirtAnt") {
+                      if (WiFi_Server.arg(n) == "true") { Set.debugmodeVirtAnt = true; }
+                      else { Set.debugmodeVirtAnt = false; }
+                  }
+                  if (WiFi_Server.argName(n) == "debugmFiltPos") {
+                      if (WiFi_Server.arg(n) == "true") { Set.debugmodeFilterPos = true; }
+                      else { Set.debugmodeFilterPos = false; }
+                  }
+
+                  if (WiFi_Server.argName(n) == "debugmNtrip") {
+                      if (WiFi_Server.arg(n) == "true") { Set.debugmodeNTRIP = true; }
+                      else { Set.debugmodeNTRIP = false; }
+                  }
+                  if (WiFi_Server.argName(n) == "debugmRAW") {
+                      if (WiFi_Server.arg(n) == "true") { Set.debugmodeRAW = true; }
+                      else { Set.debugmodeRAW = false; }
+                  }
+       */
+        if (WiFi_Server.argName(n) == "WiFiLEDon") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.LEDWiFi_ON_Level = byte(temLong);
+                if (LED_WIFI_ON) { digitalWrite(Set.LEDWiFi_PIN, Set.LEDWiFi_ON_Level); }
+                else { digitalWrite(Set.LEDWiFi_PIN, !Set.LEDWiFi_ON_Level); }
+            }
+        }
+
+        if (WiFi_Server.argName(n) == "LED") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.LEDWiFi_PIN = byte(temLong);
+                pinMode(Set.LEDWiFi_PIN, OUTPUT);
+                if (LED_WIFI_ON) { digitalWrite(Set.LEDWiFi_PIN, Set.LEDWiFi_ON_Level); }
+                else { digitalWrite(Set.LEDWiFi_PIN, !Set.LEDWiFi_ON_Level); }
+            }
+        }
+        if (WiFi_Server.argName(n) == "TX1") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.TX1 = byte(temLong);
+                Serial1.end();
+                delay(20);
+                Serial1.begin(115200, SERIAL_8N1, Set.RX1, Set.TX1);
+                delay(5);
+            }
+        }
+        if (WiFi_Server.argName(n) == "RX1") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.RX1 = byte(temLong);
+                Serial1.end();
+                delay(20);
+                Serial1.begin(115200, SERIAL_8N1, Set.RX1, Set.TX1);
+                delay(5);
+            }
+        }
+        if (WiFi_Server.argName(n) == "TX2") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.TX2 = byte(temLong);
+                Serial2.end();
+                delay(20);
+                Serial2.begin(115200, SERIAL_8N1, Set.RX2, Set.TX2);
+                delay(5);
+            }
+        }
+        if (WiFi_Server.argName(n) == "RX2") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.RX2 = byte(temLong);
+                Serial2.end();
+                delay(20);
+                Serial2.begin(115200, SERIAL_8N1, Set.RX2, Set.TX2);
+                delay(5);
+            }
+        }
+        if (WiFi_Server.argName(n) == "WiFiResc") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 0) && (temLong <= 40)) {
+                Set.LEDWiFi_PIN = byte(temLong);
+                pinMode(Set.Button_WiFi_rescan_PIN, INPUT_PULLUP);
+            }
+        }
+        if (action == ACTION_RESTART) {
+            Serial.println("reboot ESP32: selected by webinterface");
+            EEprom_block_restart();//prevents from restarting, when webpage is reloaded. Is set to 0, when other ACTION than restart is called
+            delay(2000);
+            ESP.restart();
+        }
     }
 }
 
@@ -732,7 +783,7 @@ void make_HTML01() {
     strcat(HTML_String, "<body bgcolor=\"#66b3ff\">");//ff9900 ffcc00
     strcat(HTML_String, "<font color=\"#000000\" face=\"VERDANA,ARIAL,HELVETICA\">");
     strcat(HTML_String, "<h1>GPS roof unit for ESP32</h1>");
-    strcat(HTML_String,"supports data via USB, WiFi/Ethernet UDP<br>possible IMU types: BNO085 (serial mode) or CMPS14 (I2C)<br><br>");
+    strcat(HTML_String,"supports data via USB, WiFi/Ethernet UDP<br>possible IMU types: BNO085 (RVC serial mode) or CMPS14 (I2C)<br><br>");
     strcat(HTML_String, "<b>Transfers NTRIP data from AOG port ");
     strcati(HTML_String, Set.AOGNtripPort);
     strcat(HTML_String," to GPS receiver</b><br><br>");
@@ -740,7 +791,6 @@ void make_HTML01() {
     strcati(HTML_String, vers_nr);
     strcat(HTML_String, VersionTXT);
     strcat(HTML_String, "<br><hr>");
-
 
     //---------------------------------------------------------------------------------------------  
     //load values of INO setup zone
@@ -902,7 +952,7 @@ void make_HTML01() {
     strcat(HTML_String, "<td></td><td><input type = \"radio\" onclick=\"sendVal('/?DataTransfVia=0')\" name=\"DataTransfVia\" id=\"JZ\" value=\"0\"");
     if (Set.DataTransVia == 0)strcat(HTML_String, " CHECKED");
     strcat(HTML_String, "><label for=\"JZ\">USB at ");
-    strcati(HTML_String, Set.USB_baudrate);
+    strcati(HTML_String, baudrates[Set.GPS_baudrate_Nr]);
     strcat(HTML_String, " baud</label></td>");
     strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
     strcat(HTML_String, "</tr>");
@@ -922,7 +972,7 @@ void make_HTML01() {
     strcat(HTML_String, "</form>");
     strcat(HTML_String, "<br><hr>");
 
-
+/*
     //---------------------------------------------------------------------------------------------  
     // NTRIP
 
@@ -943,12 +993,12 @@ void make_HTML01() {
     strcat(HTML_String, "<td></td><td colspan=\"2\"><input type = \"radio\" onclick=\"sendVal('/?NtripClientBy=1')\" name=\"NtripClientBy\" id=\"JZ\" value=\"1\"");
     if (Set.NtripClientBy == 1)strcat(HTML_String, " CHECKED");
     strcat(HTML_String, "><label for=\"JZ\">AOG NTRIP client (for WiFi/Ethernet UDP set port 2233 in AOG)</label></td></tr>");
-/*
+
     strcat(HTML_String, "<tr>");
     strcat(HTML_String, "<td></td><td colspan=\"2\"><input type = \"radio\" onclick=\"sendVal('/?NtripClientBy=2')\" name=\"NtripClientBy\" id=\"JZ\" value=\"2\"");
     if (Set.NtripClientBy == 2)strcat(HTML_String, " CHECKED");
     strcat(HTML_String, "><label for=\"JZ\">Roof unit NTRIP client (access data set here)</label></td></tr>");
-*/
+
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
     strcat(HTML_String, "<br><hr>");
@@ -1142,240 +1192,7 @@ void make_HTML01() {
     strcat(HTML_String, "</form><br><hr>");
   
     //---------------------------------------------------------------------------------------------
-/*
-    strcat(HTML_String, "<h1>Dual GPS antenna setup</h1><hr>");
-
-    //---------------------------------------------------------------------------------------------  
-    // Antenna distance/hight
-    strcat(HTML_String, "<h2>Dual Antenna position</h2>");
-    //   strcat(HTML_String, "antennas must be left + right to be able to calculate rollRelPosNED<br>");
-    strcat(HTML_String, "<form>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td>Antenna distance (cm)</td>");
-    strcat(HTML_String, "<td><input type = \"number\" onchange=\"sendVal('/?AntDist='+this.value)\" name = \"AntDist\" min = \"0\" max = \"1000\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    strcati(HTML_String, int(Set.AntDist));
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td>Antenna hight (cm)</td>");
-    strcat(HTML_String, "<td><input type = \"number\" onchange=\"sendVal('/?AntHight='+this.value)\" name = \"AntHight\" min = \"0\" max = \"600\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    strcati(HTML_String, int(Set.AntHight));
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "</form>");
-    strcat(HTML_String, "<br><hr>");
-
-    //---------------------------------------------------------------------------------------------  
-    // Antenna virtual position
-    strcat(HTML_String, "<h2>Dual Antenna virtual position</h2>");
-    strcat(HTML_String, "Moves the antenna point to the left and foreward,<br>");
-    strcat(HTML_String, "so you can eliminate antennas offset.<br>");
-    strcat(HTML_String, "Don't move more than antenna distance.<br><br>");
-    strcat(HTML_String, "<form>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td>move Antenna to the left (cm) (right: neg.)</td>");
-    strcat(HTML_String, "<td><input type = \"number\" onchange=\"sendVal('/?AntLeft='+this.value)\" name = \"AntLeft\" min = \"-1000\" max = \"1000\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    strcati(HTML_String, int(Set.virtAntLeft));
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td>move Antenna foreward (cm) (backw.: neg.)</td>");
-    strcat(HTML_String, "<td><input type = \"number\" onchange=\"sendVal('/?AntForew='+this.value)\" name = \"AntForew\" min = \"-1000\" max = \"1000\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    strcati(HTML_String, int(Set.virtAntForew));
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "</form>");
-    strcat(HTML_String, "<br><hr>");
-
-    //---------------------------------------------------------------------------------------------  
-    // heading angle correction 
-    strcat(HTML_String, "<h2>Dual antenna heading angle correction/max heading change</h2>");
-    
-    strcat(HTML_String, "<form>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-
-    strcat(HTML_String, "<tr><td colspan=\"3\">Set to 90 if antenna for position is right and other left.</td></tr>");
-    strcat(HTML_String, "<tr><td>Heading angle correction for dual GPS</td><td><input type = \"number\" onchange=\"sendVal('/?HeadAngleCorr='+this.value)\" name = \"HeadAngleCorr\" min = \" 0\" max = \"360\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    if (Set.headingAngleCorrection < 10) { strcatf(HTML_String, Set.headingAngleCorrection, 3, 1); }
-    else {
-        if (Set.headingAngleCorrection < 100) { strcatf(HTML_String, Set.headingAngleCorrection, 4, 1); }
-        else { strcatf(HTML_String, Set.headingAngleCorrection, 5, 1); }
-    }
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-/*
-    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Heading values from dual GPS and position antenna (VTG heading).</td></tr>");
-    strcat(HTML_String, "<td colspan=\"3\">Drive straight, when reloading webpage to get good VTG values.</b></td></tr>");
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-    strcat(HTML_String, "<tr><td>Heading from dual GPS</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
-    if (HeadingRelPosNED < 10) { strcatf(HTML_String, HeadingRelPosNED, 3, 1); }
-    else {
-        if (HeadingRelPosNED < 100) { strcatf(HTML_String, HeadingRelPosNED, 4, 1); }
-        else { strcatf(HTML_String, HeadingRelPosNED, 5, 1); }
-    }
-    strcat(HTML_String, "</b></font></divbox></td></tr>");
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-    strcat(HTML_String, "<tr><td>Heading from VTG</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
-    if (HeadingVTG < 10) { strcatf(HTML_String, HeadingVTG, 3, 1); }
-    else {
-        if (HeadingVTG < 100) { strcatf(HTML_String, HeadingVTG, 4, 1); }
-        else { strcatf(HTML_String, HeadingVTG, 5, 1); }
-    }
- */
-/*strcat(HTML_String, "</b></font></divbox></td>");
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-    strcat(HTML_String, "<tr><td>Heading from CMPS</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
-    if (HeadingIMUcorr < 10) { strcatf(HTML_String, HeadingIMUcorr, 3, 1); }
-    else {
-        if (HeadingIMUcorr < 100) { strcatf(HTML_String, HeadingIMUcorr, 4, 1); }
-        else { strcatf(HTML_String, HeadingIMUcorr, 5, 1); }
-    }
-    strcat(HTML_String, "</b></font></divbox></td>");
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
- /*   strcat(HTML_String, "<tr><td>Heading Mix</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
-    if (HeadingMix < 10) { strcatf(HTML_String, HeadingMix, 3, 1); }
-    else {
-        if (HeadingMix < 100) { strcatf(HTML_String, HeadingMix, 4, 1); }
-        else { strcatf(HTML_String, HeadingMix, 5, 1); }
-    }
- *//*   strcat(HTML_String, "</b></font></divbox></td>");
-    //Refresh button
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"location.reload()\" style= \"width:120px\" value=\"Refresh\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-  /*  strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-
-    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Max heading change per second. Limits dual GPS and VTG heading change.</b></td></tr>");
-    strcat(HTML_String,"<tr><td colspan=\"3\">Limits heading change to avoid jumps. Max change (deg/s) at 5 km/h.</td> </tr>");
-    strcat(HTML_String, "<tr><td colspan=\"3\">Angle is adjusted to speed: faster -> less change.</td> </tr>");
-    strcat(HTML_String, "<tr><td>recommended 30-50 deg/s</td><td><input type = \"number\" onchange=\"sendVal('/?maxHeadChang='+this.value)\" name = \"maxHeadChang\" min = \" 2\" max = \"99\" step = \"1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    if (Set.MaxHeadChangPerSec < 10) { strcati(HTML_String, Set.MaxHeadChangPerSec); }
-    else {
-        if (Set.MaxHeadChangPerSec < 100) { strcati(HTML_String, Set.MaxHeadChangPerSec); }
-    }
-    strcat(HTML_String, "\"></td></tr>");
-
-    
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "</form>");
-    strcat(HTML_String, "<br><hr>");
-
-    //---------------------------------------------------------------------------------------------  
-    // Roll angle correction 
-    strcat(HTML_String, "<h2>Roll angle correction for dual antenna</h2>");
-    strcat(HTML_String, "Antennas must be left + right to be able to calculate roll.<br><br>");
-    strcat(HTML_String, "<form>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td></td><td><input type = \"number\" onchange=\"sendVal('/?RollAngleCorr='+this.value)\" name = \"RollAngleCorr\" min = \" - 45\" max = \"45\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
-
-    strcatf(HTML_String, Set.DualRollAngleCorrection, 3, 1);
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-    strcat(HTML_String, "<tr><td>Roll from dual GPS</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
-    double roll = rollRelPosNED - Set.DualRollAngleCorrection;
-    if (roll < 0) { strcat(HTML_String, "-"); roll = abs(roll); }
-    if (roll < 10) { strcatf(HTML_String, roll, 3, 1); }
-    else {strcatf(HTML_String, roll, 4, 1); }
-    strcat(HTML_String, "</b></font></divbox></td>");
-    //Refresh button
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"location.reload()\" style= \"width:120px\" value=\"Refresh\"></button></td>");
-       strcat(HTML_String, "</b></font></divbox></td></tr>");
-       if (Set.IMUType) {
-           strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-           strcat(HTML_String, "<tr><td>Roll from CMPS14</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
-           roll = rollIMURAW - Set.IMURollCorrection;
-           if (roll < 0) { strcat(HTML_String, "-"); roll = abs(roll); }
-           if (roll < 10) { strcatf(HTML_String, roll, 3, 1); }
-           else { strcatf(HTML_String, roll, 4, 1); }
-       }
-    strcat(HTML_String, "</tr>");
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "</form>");
-    strcat(HTML_String, "<br><hr>");
-
-    //---------------------------------------------------------------------------------------------  
-    // heading calc antenna dist deviation + filter postion
-    strcat(HTML_String, "<h2>GPS Signal quality check</h2>");        
-    strcat(HTML_String,"<b>Max deviation for heading/roll calculation</b><br><br>");
-    strcat(HTML_String, "If GPS signal is weak, heading and roll calc is wrong.<br>");
-    strcat(HTML_String, "To check this, the antenna distance messured by GPS is compared with antenna distance from setup.<br>");
-    strcat(HTML_String, "This factor is the max deviation for doing the calculations.<br>");
-    strcat(HTML_String, "Example: Ant dist at tractor 100cm factor 1.2 = 100*1.2= 120cm; 100/1.2 = 83 cm.<br>"); 
-    strcat(HTML_String, "If GPS antenna distance is less than 120 and more than 83 heading calcultaion is done.<br>");
-    strcat(HTML_String, "Roll calculation is only done, if deviation is less than 1 / 4 of it.<br> <br>");
-    strcat(HTML_String, "<b>factor: 1.1 - 3  recommended: 1.2 - 1.4. For new setups use 3 to test!</b><br>");
-    
-    strcat(HTML_String, "<form>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td></td><td><input type = \"number\" onchange=\"sendVal('/?AntDistDevFact='+this.value)\" name = \"AntDistDevFact\" min = \" 1.1\" max = \"5\" step = \"0.01\" style= \"width:100px\" value = \"");// placeholder = \"");
-    strcatf(HTML_String, Set.AntDistDeviationFactor, 4, 2);
-    strcat(HTML_String, "\"></td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-    strcat(HTML_String, "</table><br><br>");
-
-    strcat(HTML_String, "<b>Check UBX flags for signal quality</b><br>");
-    strcat(HTML_String, "With some bases for RTK, the flags sometimes fall back, so position will jump.<br>");
-    strcat(HTML_String, "In this case turn check of UBX falgs OFF<br>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-   // strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
-    //checkbox
-    strcat(HTML_String, "<tr><td>(default: ON)</td><td><input type=\"checkbox\" onclick=\"sendVal('/?UBXFlagCheck='+this.checked)\" name=\"UBXFlagCheck\" id = \"Part\" value = \"1\" ");
-    if (Set.checkUBXFlags == 1) strcat(HTML_String, "checked ");
-    strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> <b>check UBX flags</b></label>");
-    strcat(HTML_String, "</td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-    strcat(HTML_String, "</table><br><br>");
-
-    strcat(HTML_String, "<b>Filter GPS position on weak signal</b><br>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-    strcat(HTML_String, "<tr>");
-    //checkbox
-    strcat(HTML_String, "<tr><td>(default: ON)</td><td><input type=\"checkbox\" onclick=\"sendVal('/?GPSPosFilter='+this.checked)\" name=\"GPSPosFilter\" id = \"Part\" value = \"1\" ");
-    if (Set.filterGPSposOnWeakSignal == 1) strcat(HTML_String, "checked ");
-    strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> <b>Filter GPS postition</b></label>");
-    strcat(HTML_String, "</td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "</form>");
-    strcat(HTML_String, "<br><hr>");
-*/
-    //---------------------------------------------------------------------------------------------
+    // IMU setup
 
     strcat(HTML_String, "<h2>IMU setup</h2>");
 
@@ -1390,7 +1207,6 @@ void make_HTML01() {
     strcat(HTML_String, "><label for=\"JZ\">none</label></td>");
     strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
     strcat(HTML_String, "</tr>");
-   // strcat(HTML_String, "><label for=\"JZ\">none</label></td></tr>");
 
     strcat(HTML_String, "<tr>");
     strcat(HTML_String, "<td></td><td colspan=\"2\"><input type = \"radio\" onclick=\"sendVal('/?IMUtype=1')\" name=\"IMUtype\" id=\"JZ\" value=\"1\"");
@@ -1412,17 +1228,20 @@ void make_HTML01() {
     set_colgroup(350, 200, 150, 0, 0);
 
     //checkbox
-    strcat(HTML_String, "<tr><td>Swap roll and pitch (BNO085 only) </td><td><input type=\"checkbox\" onclick=\"sendVal('/?swapRollPitch='+this.checked)\" name=\"swapRollPitch\" id = \"Part\" value = \"1\" ");
-    if (Set.swapRollPitch) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "<tr><td>Swap roll and pitch (BNO085 only) </td><td><input type=\"checkbox\" onclick=\"sendVal('/?IMUswapRollPitch='+this.checked)\" name=\"IMUswapRollPitch\" id = \"Part\" value = \"1\" ");
+    if (Set.IMUswapRollPitch) strcat(HTML_String, "checked ");
     strcat(HTML_String, "></td>");
     strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
     strcat(HTML_String, "</tr>");
+    strcat(HTML_String, "<tr><td>Invert roll </td><td><input type=\"checkbox\" onclick=\"sendVal('/?IMUinvertRoll='+this.checked)\" name=\"IMUinvertRoll\" id = \"Part\" value = \"1\" ");
+    if (Set.IMUinvertRoll) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "></td></tr>");
 
     strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
     strcat(HTML_String, "<tr><td>Roll from IMU</td><td><divbox align=\"right\"><font size=\"+1\"><b>");
     if (bitRead(IMURoll[IMUDataRingCount],15)) { rollIMURAW = float(IMURoll[IMUDataRingCount] - 65535) / 10; }
     else{ rollIMURAW = float(IMURoll[IMUDataRingCount]) / 10; }
-    if (rollIMURAW < 0) { strcat(HTML_String, "-"); rollIMURAW = abs(rollIMURAW); }
+    if (rollIMURAW < 0) { rollIMURAW += 6553.5; }//
     if (rollIMURAW < 10) { strcatf(HTML_String, rollIMURAW, 3, 1); }
     else { strcatf(HTML_String, rollIMURAW, 4, 1); }
     strcat(HTML_String, "</b></font></divbox></td>");
@@ -1451,10 +1270,10 @@ void make_HTML01() {
     set_colgroup(350, 200, 150, 0, 0);
 
     strcat(HTML_String, "<tr><td>heading angle correction</td><td><input type = \"number\" onchange=\"sendVal('/?HeadAngleCorrCMPS='+this.value)\" name = \"HeadAngleCorrCMPS\" min = \" 0\" max = \"360\" step = \"0.1\" style= \"width:100px\" value = \"");// placeholder = \"");
-    if (Set.IMUHeadingCorrection < 10) { strcatf(HTML_String, Set.IMUHeadingCorrection, 3, 1); }
+    if (Set.CMPSHeadingCorrection < 10) { strcatf(HTML_String, Set.CMPSHeadingCorrection, 3, 1); }
     else {
-        if (Set.IMUHeadingCorrection < 100) { strcatf(HTML_String, Set.IMUHeadingCorrection, 4, 1); }
-        else { strcatf(HTML_String, Set.IMUHeadingCorrection, 5, 1); }
+        if (Set.CMPSHeadingCorrection < 100) { strcatf(HTML_String, Set.CMPSHeadingCorrection, 4, 1); }
+        else { strcatf(HTML_String, Set.CMPSHeadingCorrection, 5, 1); }
     }
     strcat(HTML_String, "\"></td>");
     strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
@@ -1475,92 +1294,106 @@ void make_HTML01() {
     strcat(HTML_String, "</form>");
     strcat(HTML_String, "<br><hr>");
 */
-
-    //---------------------------------------------------------------------------------------------
-/*
-    strcat(HTML_String, "<h1>Output data setup</h1><hr>");
-
-    //---------------------------------------------------------------------------------------------  
-    // GPS position correction by rollRelPosNED 
-    strcat(HTML_String, "<h2>Correct GPS position using roll (dual antenna or CMPS)</h2>");
-    strcat(HTML_String, "Roll corrected position is send, it's like moving antenna over the ground.<br>");
-    strcat(HTML_String, "The left and right movement caused by rocking tractor is eliminated.<br>");
-    strcat(HTML_String, "Roll transfered to AOG is more filtered for sidehill draft gain.<br>");
-    strcat(HTML_String, "Antennas must be left + right to be able to calculate roll.<br>");
-    strcat(HTML_String, "With single antenna a CMPS14 IMU is needed.<br><br>");
-    strcat(HTML_String, "<form>");
-    strcat(HTML_String, "<table>");
-    set_colgroup(300, 250, 150, 0, 0);
-
-    //checkbox
-    strcat(HTML_String, "<tr><td>(default: ON)</td><td><input type=\"checkbox\" onclick=\"sendVal('/?GPSPosCorrByRoll='+this.checked)\" name=\"GPSPosCorrByRoll\" id = \"Part\" value = \"1\" ");
-    if (Set.GPSPosCorrByRoll == 1) strcat(HTML_String, "checked ");
-    strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> <b>send corrected position</b></label>");
-    strcat(HTML_String, "</td>");    
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</tr>");
-
-    strcat(HTML_String, "</table>");
-    strcat(HTML_String, "</form>");
-    strcat(HTML_String, "<br><hr>");
-*/
     //---------------------------------------------------------------------------------------------
     // Checkboxes Messages
     strcat(HTML_String, "<h2>Messages to send to AgOpenGPS</h2>");
-    strcat(HTML_String, "If you have a BNO085 or CMPS14 IMU send IMU PGN to AgOpenGPS.<br>");
+    strcat(HTML_String, "If you have a BNO085 or CMPS14 IMU send $PANDA OR IMU PGN to AgOpenGPS.<br>");
     strcat(HTML_String, "<form>");
     strcat(HTML_String, "<table>");
     set_colgroup(150, 400, 150, 0, 0);
-/*
-	strcat(HTML_String, "<tr>");
-	strcat(HTML_String, "<td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?seOGI='+this.checked)\" name=\"seOGI\" id = \"Part\" value = \"1\" ");
-	if (Set.sendOGI == 1) strcat(HTML_String, "checked ");
-	strcat(HTML_String, "> ");
-	strcat(HTML_String, "<label for =\"Part\"> send PAOGI</label>");
-	strcat(HTML_String, "</td>");    
+
+//send PANDA or org NMEA sentence radio button
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td colspan=\"2\"><input type = \"radio\" onclick=\"sendVal('/?sePANDA=1')\" name=\"PANDA\" id=\"JZ\" value=\"1\"");
+    if (Set.sendPANDA == 1) strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">send $PANDA (default, used only by AgOpenGPS)</label></td>");
+    strcat(HTML_String, "</tr>");
+
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+
+    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<td></td><td><input type = \"radio\" onclick=\"sendVal('/?sePANDA=0')\" name=\"PANDA\" id=\"JZ\" value=\"0\"");
+    if (Set.sendPANDA == 0)strcat(HTML_String, " CHECKED");
+    strcat(HTML_String, "><label for=\"JZ\">send original NMEA sentence</label></td>");
     strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
+    strcat(HTML_String, "</tr>");
 
-    strcat(HTML_String, "<tr>");
-    strcat(HTML_String, "<td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?seGGA='+this.checked)\" name=\"seGGA\" id = \"Part\" value = \"1\" ");
-    if (Set.sendGGA == 1) strcat(HTML_String, "checked ");
+    strcat(HTML_String, "<tr><td></td><td colspan=\"2\"><input type=\"checkbox\" onclick=\"sendVal('/?seIMU='+this.checked)\" name=\"seIMU\" id = \"Part\" value = \"1\" ");
+    if (Set.sendIMUPGN == 1) strcat(HTML_String, "checked ");
     strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> send GPGGA</label>");
+    strcat(HTML_String, "<label for =\"Part\"> send IMU PGN (NOT with PANDA, as included in PANDA)</label>");
     strcat(HTML_String, "</td></tr>");
-    strcat(HTML_String, "<tr>");
 
-    strcat(HTML_String, "<td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?seVTG='+this.checked)\" name=\"seVTG\" id = \"Part\" value = \"1\" ");
-    if (Set.sendVTG == 1) strcat(HTML_String, "checked ");
-    strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> send GPVTG</label>");
-    strcat(HTML_String, "</td></tr>");
-    strcat(HTML_String, "<tr>");
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
 
-    strcat(HTML_String, "<td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?seHDT='+this.checked)\" name=\"seHDT\" id = \"Part\" value = \"1\" ");
-    if (Set.sendHDT == 1) strcat(HTML_String, "checked ");
-    strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> send GPHDT</label>");
-    strcat(HTML_String, "</td></tr>");
-*/
     strcat(HTML_String, "<tr><td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?AgIOHeartBeat='+this.checked)\" name=\"AgIOHeartBeat\" id = \"Part\" value = \"1\" ");
     if (Set.AgIOHeartbeat_answer == 1) { strcat(HTML_String, "checked "); }
     strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> send IMU heartbeat</label></td>");
-    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
-    strcat(HTML_String, "</td></tr>");
-
-    strcat(HTML_String, "<tr><td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?seIMU='+this.checked)\" name=\"seIMU\" id = \"Part\" value = \"1\" ");
-    if (Set.sendIMUPGN == 1) strcat(HTML_String, "checked ");
-    strcat(HTML_String, "> ");
-    strcat(HTML_String, "<label for =\"Part\"> send IMU PGN</label>");
-    strcat(HTML_String, "</td></tr>");
+    strcat(HTML_String, "<label for =\"Part\"> send IMU heartbeat</label></td></tr>");
 
     strcat(HTML_String, "</table>");
     strcat(HTML_String, "</form>");
+    strcat(HTML_String, "<br><hr>");    
+
+    //---------------------------------------------------------------------------------------------
+    // GPS to USB brigde
+    strcat(HTML_String, "<h2>USB to GPS and GPS to USB bridge</h2>");
+    strcat(HTML_String, "Activate to configure F9P GPS with UCenter via ESP32 USB port.<br>All data will be send from USB to UART1 of GPS system at 115.200 baud.<br><br>");
+    strcat(HTML_String, "<form>");
+    strcat(HTML_String, "<table>");
+    set_colgroup(150, 400, 150, 0, 0);
+
+    strcat(HTML_String, "<tr><td></td><td><input type=\"checkbox\" onclick=\"sendVal('/?GPS2USB='+this.checked)\" name=\"GPS2USB\" id = \"Part\" value = \"1\" ");
+    if (Set.bridgeGPStoUSB == 1) { strcat(HTML_String, "checked "); }
+    strcat(HTML_String, "> ");
+    strcat(HTML_String, "<label for =\"Part\"> bridge GPS to USB and vice versa</label></td>");
+    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
+
+    strcat(HTML_String, "</tr></table>");
+    strcat(HTML_String, "</form>");
     strcat(HTML_String, "<br><hr>");
 
+    //---------------------------------------------------------------------------------------------
+    // GPS Get Baudrate
+    strcat(HTML_String, "<h2>ESP32 serial1 baudrate connected to GPS u-blox chip UART 1 baudrate</h2>");
+    strcat(HTML_String, "If the baudrate between ESP32 and u-blox F9P does not fit, no data will be transferd.<br>Run get u-blox baudrate below, if UCenter is not working or no GPS data is comming.<br><br>");
+    strcat(HTML_String, "<form>");
+    strcat(HTML_String, "<table>");
+    set_colgroup(50, 180, 180, 0, 0);
 
+    strcat(HTML_String, "<tr> <td colspan=\"2\">ESP32 serial1 to GPS baudrate</td><td>ESP32 USB baudrate</td></tr>");
+    for (byte i = 0; i < nrBaudrates; i++) {//nrBaudrates
+        strcat(HTML_String, "<tr><td>");
+        if ((Set.GPS_baudrate_Nr == i) && GPSBaudrateValid) strcat(HTML_String, "u-blox verified");
+        strcat(HTML_String, "</td><td><input type = \"radio\" onclick=\"sendVal('/?BaudrGPS=");
+        strcati(HTML_String, i);
+        strcat(HTML_String, "')\" name=\"baudrate\" id=\"JZ\" value=\"");
+        strcati(HTML_String, i);
+        strcat(HTML_String, "\"");
+        if (Set.GPS_baudrate_Nr == i) strcat(HTML_String, "CHECKED");
+        strcat(HTML_String, "><label for=\"JZ\"> ");
+        strcati(HTML_String, baudrates[i]);
+        strcat(HTML_String, "</label></td>");
 
+        strcat(HTML_String, "<td><input type = \"radio\" onclick=\"sendVal('/?BaudrUSB=");
+        strcati(HTML_String, i);
+        strcat(HTML_String, "')\" name=\"baudrateUSB\" id=\"JZ2\" value=\"");
+        strcati(HTML_String, i);
+        strcat(HTML_String, "\"");
+        if (Set.USB_baudrate_Nr == i) strcat(HTML_String, "CHECKED");
+        strcat(HTML_String, "><label for=\"JZ2\"> ");
+        strcati(HTML_String, baudrates[i]);
+        strcat(HTML_String, "</label></td></tr>");
+    }
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
+
+    strcat(HTML_String, "<tr> <td colspan=\"3\">Click get u-blox baudrate to check and<b> wait 15 seconds and reload the page!</b></td> </tr>");
+    strcat(HTML_String, "<tr><td></td><td><input type= \"button\" onclick= \"sendVal('/?GPSGetBaud=true');setTimeout(location.reload.bind(location), 7000);\" style= \"width:200px\" value=\"get u-blox baudrate\"></button></td>");
+    strcat(HTML_String, "<td><input type= \"button\" onclick= \"sendVal('/?Save=true')\" style= \"width:120px\" value=\"Save\"></button></td>");
+
+    strcat(HTML_String, "</tr></table>");
+    strcat(HTML_String, "</form>");
+    strcat(HTML_String, "<br><br>If it worked klick the Save button!<br><hr>");
 
     //-------------------------------------------------------------
     // Checkboxes debugmode
@@ -1570,7 +1403,7 @@ void make_HTML01() {
     set_colgroup(150, 400, 150, 0, 0);
 
     strcat(HTML_String, "<tr> <td colspan=\"3\">debugmode sends messages to USB serial at ");
-    strcati(HTML_String, Set.USB_baudrate);
+    strcati(HTML_String, baudrates[Set.GPS_baudrate_Nr]);
     strcat(HTML_String, " baud </td>");
 
     strcat(HTML_String, "<tr>");
