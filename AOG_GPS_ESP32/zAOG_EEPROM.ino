@@ -1,10 +1,9 @@
-#if HardwarePlatform == 0
 //--------------------------------------------------------------
-//  EEPROM Data Handling
+//  EEPROM Data Handling 7. Maerz 2021
 //--------------------------------------------------------------
-#define EEPROM_SIZE 512
+#define EEPROM_SIZE 1450 //7. Maerz 2021: 2x 696 needed
 #define EE_ident1 0xED  // Marker Byte 0 + 1
-#define EE_ident2 0x44
+byte EE_ident2 = vers_nr;
 
 
 //--------------------------------------------------------------
@@ -12,50 +11,89 @@
 //--------------------------------------------------------------
 void restoreEEprom() {
 	Serial.println("read values from EEPROM");
-
-	if (EEprom_empty_check() == 1 || EEPROM_clear) { //first start?
+	byte ECheck = EEprom_empty_check();
+	if (ECheck == 1 || EEPROM_clear) { //first start?
 		EEprom_write_all();     //write default data
+		Serial.println("EEPROM write all");
 	}
-	if (EEprom_empty_check() == 2) { //data available
+	if (ECheck == 2) { //data available
 		EEprom_read_all();
+		Serial.println("EEPROM read all");
 	}
-	if (GPSSet.debugmode) { EEprom_show_memory(); }
+	if (Set.debugmode) { EEprom_show_memory(); }
 }
 
 //--------------------------------------------------------------
 byte EEprom_empty_check() {
-
 	if (!EEPROM.begin(EEPROM_SIZE))
 	{
-		Serial.println("failed to initialise EEPROM"); delay(1000);
-		return false;//0
+		Serial.println("init EEPROM failed"); delay(1000);
+		return 0;
 	}
-	if ((EEPROM.read(0) != EE_ident1) || (EEPROM.read(1) != EE_ident2))
-		return true;  // 1 = is empty
 
+	if ((EEPROM.read(0) != EE_ident1) || (EEPROM.read(1) != EE_ident2))
+	{
+		Serial.println("no valid EEPROM data");
+		return 1;  // 1 = is empty
+	}
 	if ((EEPROM.read(0) == EE_ident1) && (EEPROM.read(1) == EE_ident2))
+	{
+		if (Set.debugmode) {
+			Serial.println("valid EEPROM data found");
+		}
 		return 2;     // data available
+	}
+}
+//-------------------------------------------------------------------------------------------------
+
+void EEprom_write_all() {
+	int leng = sizeof(Set);
+	byte tempbyt = EEprom_empty_check();
+	if ((tempbyt == 0) || (tempbyt == 1) || (EEPROM_clear)) {
+		//EEPROM.put((4 + sizeof(Set)), Set); 
+		Serial.print("rewriting EEPROM + write 2. set at #"); Serial.println(4 + leng);
+		//write 2. time with defaults to be able to reload them  
+		for (int n = 0; n < leng; n++) {
+			EEPROM.write(n + 4 + leng, ((unsigned char*)(&Set))[n]);
+			//delay(2);
+		}
+		//EEPROM.put(4 + leng, Set);
+		vTaskDelay(50);
+		//delay(50);
+		EEPROM.commit();
+		//delay(50);
+		EEPROM.write(0, EE_ident1);	delay(2);
+		EEPROM.write(1, EE_ident2); delay(2);
+	}
+	for (int n = 0; n < leng; n++) {
+		EEPROM.write(n + 3, ((unsigned char*)(&Set))[n]);
+		//delay(2);
+	}
+	//EEPROM.put(3, Set);
+	vTaskDelay(50);
+	//delay(50);
+	EEPROM.commit();
+	//delay(50);
+}
+//--------------------------------------------------------------
+void EEprom_read_all() {
+	int leng = sizeof(Set);
+	Serial.print(leng);
+	Serial.println(" Bytes reading from EEPROM ");
+	for (int n = 0; n < leng; n++) {
+		((unsigned char*)(&Set))[n] = EEPROM.read(n + 3);
+	}
+	//	EEPROM.get(3, Set);
 
 }
 //--------------------------------------------------------------
-
-void EEprom_write_all() {
-	//first time = empty or clear EEPROM data?
-	byte tempbyt = EEprom_empty_check();
-
-	EEPROM.write(0, EE_ident1);
-	EEPROM.write(1, EE_ident2);
-	EEPROM.write(2, 0); // reset Restart blocker
-	EEPROM.put(3, GPSSet);
-	EEPROM.commit();
-
-
-	if ((tempbyt == 0) || (tempbyt == 1) || (EEPROM_clear)) {
-		EEPROM.put((4 + sizeof(GPSSet)), GPSSet);
-		Serial.print("rewriting EEPROM + write 2. set at #"); Serial.println(4 + sizeof(GPSSet));
-		delay(2);
-		EEPROM.commit();
-	}//write 2. time with defaults to be able to reload them  
+void EEprom_read_default() {
+	int leng = sizeof(Set);
+	for (int n = 0; n < leng; n++) {
+		((unsigned char*)(&Set))[n] = EEPROM.read(n + 4 + leng);
+	}
+	//EEPROM.get(4 + sizeof(Set), Set);
+	Serial.print("load default value from EEPROM at #"); Serial.println(4 + sizeof(Set));
 }
 
 //--------------------------------------------------------------
@@ -63,38 +101,29 @@ void EEprom_write_all() {
 void EEprom_block_restart() {
 	if (EEPROM.read(2) == 0) {//prevents from restarting, when webpage is reloaded. Is set to 0, when other ACTION than restart is called
 		EEPROM.write(2, 1);
+		delay(2);
 		EEPROM.commit();
+		//delay(50);
 	}
 }
 
 //--------------------------------------------------------------
-
 
 void EEprom_unblock_restart() {
 	if (EEPROM.read(2) != 0) {
 		EEPROM.write(2, 0); // reset Restart blocker
 		delay(2);
 		EEPROM.commit();
+		//delay(50);
 	}
 }
 
 //--------------------------------------------------------------
 
-void EEprom_read_all() {
-
-	EEPROM.get(3, GPSSet);
-
-}
-//--------------------------------------------------------------
-void EEprom_read_default() {
-	EEPROM.get(4 + sizeof(GPSSet), GPSSet);
-	Serial.print("load default value from EEPROM at #"); Serial.println(4 + sizeof(GPSSet));
-}
-//--------------------------------------------------------------
 void EEprom_show_memory() {
 	byte c2 = 0, data_;
 	Serial.print(EEPROM_SIZE, 1);
-	Serial.println(" bytes read from Flash . Values are:");
+	Serial.println(" bytes read from Flash. Values are:");
 	for (int i = 0; i < EEPROM_SIZE; i++)
 	{
 		data_ = byte(EEPROM.read(i));
@@ -111,10 +140,6 @@ void EEprom_show_memory() {
 		c2++;
 	}
 }
-
-#endif
-
-
 
 
 //parser for 2x UBX PVT (not only RelPosNED)
@@ -135,7 +160,7 @@ void EEprom_show_memory() {
 			//add incoming byte
 			if (isUBXRelPosNED) { 
 				//add to RelPosNED sentense				
-				if (GPSSet.debugmodeUBX) { Serial.print("UBX2 digit  "); Serial.print(UBXDigit2); Serial.print(" incom Byte: "); Serial.println(incomByte2); }
+				if (Set.debugmodeUBX) { Serial.print("UBX2 digit  "); Serial.print(UBXDigit2); Serial.print(" incom Byte: "); Serial.println(incomByte2); }
 				((unsigned char*)(&UBXRelPosNED))[UBXDigit2 - 2] = incomByte2;
 			}
 			else {
@@ -151,7 +176,7 @@ void EEprom_show_memory() {
 					if (UBXPVT2[nextUBXcount2].id == 0x07) {
 						//PVT sentence
 						isUBXPVT2 = true;
-						if (GPSSet.debugmodeUBX) { Serial.println("UBX PVT2 started on serial 2"); }
+						if (Set.debugmodeUBX) { Serial.println("UBX PVT2 started on serial 2"); }
 					}
 					else 
 					{
@@ -161,7 +186,7 @@ void EEprom_show_memory() {
 							isUBXRelPosNED = true;
 							UBXRelPosNED[UBXRingCount2].cls = 0x01;
 							UBXRelPosNED[UBXRingCount2].id = 0x3C;
-							if (GPSSet.debugmodeUBX) { Serial.println("UBX RelPosNED started on serial 2"); }
+							if (Set.debugmodeUBX) { Serial.println("UBX RelPosNED started on serial 2"); }
 						}
 						else {//no sentence of interrest
 							UBXDigit2 = 0;
@@ -175,7 +200,7 @@ void EEprom_show_memory() {
 				if (UBXDigit2 == 7) {//lenght
 					if (isUBXRelPosNED) { UBXLenght2 = UBXRelPosNED[UBXRingCount2].len+8; }//+2xheader,2xclass,2xlenght,2xchecksum
 					else { UBXLenght2 = UBXPVT2[nextUBXcount2].len + 8; }//+2xheader,2xclass,2xlenght,2xchecksum
-					if (GPSSet.debugmodeUBX) { Serial.print("UBXLenght2: "); Serial.println(UBXLenght2); }
+					if (Set.debugmodeUBX) { Serial.print("UBXLenght2: "); Serial.println(UBXLenght2); }
 				}
 				else
 				{
@@ -194,7 +219,7 @@ void EEprom_show_memory() {
 								isUBXRelPosNED = false;
 								existsUBXRelPosNED = true;//if exists heading and roll calc with RelPosNED
 								UBXLenght2 = 100;
-								if (GPSSet.debugmodeUBX) {
+								if (Set.debugmodeUBX) {
 									Serial.print("got RelPosNED. Heading: "); Serial.print((UBXRelPosNED[UBXRingCount2].relPosHeading * 0.00001), 2);
 									Serial.print(" down vector (cm): "); Serial.println((float(UBXRelPosNED[UBXRingCount2].relPosD) + (float(UBXRelPosNED[UBXRingCount2].relPosHPD) * 0.01)), 2);
 								}
@@ -203,7 +228,7 @@ void EEprom_show_memory() {
 								UBXDigit1 = 0;
 								isUBXRelPosNED = false;
 								UBXLenght1 = 100;
-								if (GPSSet.debugmodeUBX) {
+								if (Set.debugmodeUBX) {
 									Serial.println("UBX2 RelPosNED checksum invalid");
 									Serial.print("UBX Checksum0 expected "); Serial.print(UBXchecksum1[0]);
 									Serial.print("  incomming Checksum0: "); Serial.println(UBXRelPosNED[UBXRingCount2].CK0);
@@ -219,7 +244,7 @@ void EEprom_show_memory() {
 									isUBXPVT2 = false;
 									UBXRingCount2 = nextUBXcount2;
 									UBXLenght2 = 100;
-									if (GPSSet.debugmodeUBX) {
+									if (Set.debugmodeUBX) {
 										Serial.print("got UBX2 PVT lat: "); Serial.print(UBXPVT2[nextUBXcount2].lat);
 										Serial.print(" lon: "); Serial.println(UBXPVT2[nextUBXcount2].lon);
 									}
@@ -228,7 +253,7 @@ void EEprom_show_memory() {
 									UBXDigit1 = 0;
 									isUBXPVT2 = false;
 									UBXLenght1 = 100;
-									if (GPSSet.debugmodeUBX) { Serial.println("UBX2 RelPosNED checksum invalid"); }
+									if (Set.debugmodeUBX) { Serial.println("UBX2 RelPosNED checksum invalid"); }
 								}
 							}//PVT
 						}//else RelPosNED
@@ -263,7 +288,7 @@ void Serial_Traffic() {
 	byte nextUBXcount1 = 0, nextUBXcount2 = 0;
 
 	//mtz8302 dual GPS: serial 2
-	if (GPSSet.dualGPS > 0) {
+	if (Set.dualGPS > 0) {
 		nextUBXcount2 = (UBXcount2 + 1) % 25;
 
 		while (Serial2.available())
@@ -422,7 +447,7 @@ void Serial_Traffic() {
 				//if (debugmode) Serial.print(gpsBuffer2[i2]);
 			}
 		}//end serial 2 
-	}//end if (GPSSet.dualGPS > 0)
+	}//end if (Set.dualGPS > 0)
 
 
   //serial1 = main if only one
@@ -570,20 +595,20 @@ void Serial_Traffic() {
 	/*			if (strcmp(Sent_Buffer1, "GGA") == 0) {
 					for (byte n = 0; n <= i1; n++) {
 						GGABuffer1[n] = gpsBuffer1[n];
-						if (GPSSet.sendGGAsentence == 2) { lastSentence[n] = gpsBuffer1[n]; }
+						if (Set.NtripSendWhichGGASentence == 2) { lastSentence[n] = gpsBuffer1[n]; }
 					}
-					if (GPSSet.sendGGAsentence == 2) { repeat_ser = millis(); } //Reset timer
+					if (Set.NtripSendWhichGGASentence == 2) { repeat_ser = millis(); } //Reset timer
 					GGATime1 = millis();
-					if (GPSSet.dualGPS > 0) {
+					if (Set.dualGPS > 0) {
 						delay(1);
 						HeadingCalc(); //heading based on position of 2 Antennas
 						if (GPSHeadingPresent) {
-							//						if ((GPSSet.filterQuota > 0) && (GPSSet.filterLastItems > 0)) { filter_movement(); }//!! first call HeadingCalc() !! filters movements and changes GGA
-							if ((GPSSet.dualGPS == 1) || (GPSSet.dualGPS == 3)) {
+							//						if ((Set.filterQuota > 0) && (Set.filterLastItems > 0)) { filter_movement(); }//!! first call HeadingCalc() !! filters movements and changes GGA
+							if ((Set.dualGPS == 1) || (Set.dualGPS == 3)) {
 								//							buildHDT();	//!! first call HeadingCalc() !!   builds $GNHDT sentence based on 2 Antenna heading 
 								newHDT = true;
 							}
-							if ((GPSSet.dualGPS == 5)) {
+							if ((Set.dualGPS == 5)) {
 								//							buildOGI();//call heading calc first!!
 							}
 						}
@@ -594,34 +619,34 @@ void Serial_Traffic() {
 					for (byte n = 0; n <= i1 + 1; n++) {
 						VTGBuffer[n] = gpsBuffer1[n];
 					}
-					if ((GPSHeadingPresent) && ((GPSSet.dualGPS == 2) || (GPSSet.dualGPS == 4))) {
+					if ((GPSHeadingPresent) && ((Set.dualGPS == 2) || (Set.dualGPS == 4))) {
 						//					changeVTG();  //!! first call HeadingCalc() !!  puts 2 Antenna heading into existing $GNVTG sentence
 					}
 
 				}
-				switch (GPSSet.send_UDP_AOG) {
+				switch (Set.send_UDP_AOG) {
 				case 1:
 					//mtz8302
 					if (my_WiFi_Mode != 0) {
-						if (GPSSet.dualGPS == 5) {
+						if (Set.dualGPS == 5) {
 							//send OGI only if new GGA position came in
 							if (strcmp(Sent_Buffer1, "GGA") == 0) {
-								udpRoof.writeTo(OGIBuffer, OGIlenght, ipDestination, portDestination);
+								WiFiUDPToAOG.writeTo(OGIBuffer, OGIlenght, WiFi_ipDestination, PortDestination);
 							}
 						}
 						else {
 							if ((newHDT) && (strcmp(Sent_Buffer1, "VTG"))) {
 								//if new vtg then send hdt too
-								udpRoof.writeTo(HDTBuffer, int(19), ipDestination, portDestination);
+								WiFiUDPToAOG.writeTo(HDTBuffer, int(19), WiFi_ipDestination, PortDestination);
 								delay(2);
 							}
-							udpRoof.writeTo(gpsBuffer1, i1, ipDestination, portDestination);
+							WiFiUDPToAOG.writeTo(gpsBuffer1, i1, WiFi_ipDestination, PortDestination);
 						}
 					}
 					//send also via BT if no Tractor WIFI = AP mode
 #if (useBluetooth)
 					if ((my_WiFi_Mode == WIFI_AP) || (my_WiFi_Mode == 0)) {
-						if (GPSSet.dualGPS == 5) {
+						if (Set.dualGPS == 5) {
 							if (strcmp(Sent_Buffer1, "GGA") == 0) { //send OGI only if new GGA came in
 								for (byte n = 0; n < OGIlenght; n++) {
 									SerialBT.print((char)OGIBuffer[n]);
@@ -647,7 +672,7 @@ void Serial_Traffic() {
 					break;
 				case 2:
 #if (useBluetooth)
-					if (GPSSet.dualGPS == 5) {
+					if (Set.dualGPS == 5) {
 						if (strcmp(Sent_Buffer1, "GGA") == 0) {//send OGI only if new GGA came in
 							for (byte n = 0; n < OGIlenght; n++) {
 								SerialBT.print((char)OGIBuffer[n]);
@@ -760,7 +785,7 @@ if (UBXTimeFit) {
 	//check if all values are there
 	if ((LatDec1 == 0.0) || (LonDec1 == 0.0) || (LatDec2 == 0.0) || (LonDec2 == 0.0)) {
 		dualGPSHeadingPresent = false;
-		if (GPSSet.RollDevice == 1) { rollPresent = false; }
+		if (Set.RollDevice == 1) { rollRelPosNEDPresent = false; }
 		if (debugmode) {
 			Serial.println(); Serial.println("NO heading calc: Lat or Long value 0");
 		}
@@ -778,10 +803,10 @@ if (UBXTimeFit) {
 		byte headRingCountOld = headRingCount;
 		headRingCount = (headRingCount + 1) % GPSHeadingArraySize;//ringcounter: 0-29
 
-		HeadingRelPosNED = GPSSet.headingAngleCorrection + Heading;
+		HeadingRelPosNED = Set.headingAngleCorrection + Heading;
 		if (HeadingRelPosNED > 360) { HeadingRelPosNED -= 360; }
 
-		if (GPSSet.debugmodeHeading) {
+		if (Set.debugmodeHeading) {
 			Serial.print("UBX1 used for heading/roll #(UBXIdx1): "); Serial.print(UBXIdx1);
 			Serial.print(" UBXIdx2: "); Serial.println(UBXIdx2);
 			Serial.print("GPS heading: "); Serial.print(HeadingRelPosNED, 3);
@@ -793,9 +818,9 @@ if (UBXTimeFit) {
 		}
 		//!!never runs?
 		//try to filter wrong UBX positions: if heading changes too much, pos is wrong
-		if ((HeadingRelPosNED[headRingCountOld] + GPSSet.headingMaxChange) < HeadingRelPosNED) {
-			if ((HeadingRelPosNED[headRingCountOld] - GPSSet.headingMaxChange) > HeadingRelPosNED) {
-				if (GPSSet.debugmodeHeading) {
+		if ((HeadingRelPosNED[headRingCountOld] + Set.headingMaxChange) < HeadingRelPosNED) {
+			if ((HeadingRelPosNED[headRingCountOld] - Set.headingMaxChange) > HeadingRelPosNED) {
+				if (Set.debugmodeHeading) {
 					Serial.print("heading old: "); Serial.print(HeadingRelPosNED[headRingCountOld], 2);
 					Serial.print(" heading new: "); Serial.println(HeadingRelPosNED, 2);
 					Serial.print("headRingCountOld: "); Serial.print(headRingCountOld);
@@ -812,11 +837,11 @@ if (UBXTimeFit) {
 		dualGPSHeadingPresent = true;
 		dualAntNoValueCount = 0;//reset watchdog
 
-		if (GPSSet.RollDevice == 1) {
+		if (Set.RollDevice == 1) {
 
 			//roll calculation only if antennas are at left+right
-			if (((GPSSet.headingAngleCorrection > 70) && (GPSSet.headingAngleCorrection < 110)) ||
-				((GPSSet.headingAngleCorrection > 250) && (GPSSet.headingAngleCorrection < 290)))
+			if (((Set.headingAngleCorrection > 70) && (Set.headingAngleCorrection < 110)) ||
+				((Set.headingAngleCorrection > 250) && (Set.headingAngleCorrection < 290)))
 			{
 				float rollOld = roll;
 				bool rollInvert = false;
@@ -825,20 +850,20 @@ if (UBXTimeFit) {
 					hightDiff *= -1;
 					rollInvert = true;
 				}
-				roll = atan2(hightDiff, GPSSet.AntDist) / PI180;
+				roll = atan2(hightDiff, Set.AntDist) / PI180;
 				if (rollInvert) { roll *= -1; }				//	roll = roll * -1; // left tilt should be negative 
-				float rollmax = rollOld + GPSSet.rollMaxChange;
-				float rollmin = rollOld - GPSSet.rollMaxChange;
+				float rollmax = rollOld + Set.rollMaxChange;
+				float rollmin = rollOld - Set.rollMaxChange;
 
 				//not realy a filter, but discards extremes
 				roll = constrain(roll, rollmin, rollmax); // attenuation of the max, min roll value
 
-				rollPresent = true;
-				if (GPSSet.debugmodeHeading) {
+				rollRelPosNEDPresent = true;
+				if (Set.debugmodeHeading) {
 					Serial.print("GPS H�he 1 (mm): "); Serial.print(UBXPVT1[UBXIdx1].hMSL);
 					Serial.print(" GPS H�he 2 (mm): "); Serial.println(UBXPVT2[UBXIdx2].hMSL);
-					Serial.print(" Antenna dist (cm): "); Serial.print(GPSSet.AntDist, 1);
-					Serial.print(" Antenna hight (cm): "); Serial.print(GPSSet.AntHight, 1);
+					Serial.print(" Antenna dist (cm): "); Serial.print(Set.AntDist, 1);
+					Serial.print(" Antenna hight (cm): "); Serial.print(Set.AntHight, 1);
 					Serial.print("Roll from GPS: "); Serial.println(roll, 4);
 				}
 			}
@@ -860,7 +885,7 @@ if (UBXTimeFit) {
 else {
 	if (debugmode) { Serial.println("UBX present, but satellite time of antennas don't fit: NO heading/roll calc"); }
 	dualGPSHeadingPresent = false;
-	if (GPSSet.RollDevice == 1) { rollPresent = false; }
+	if (Set.RollDevice == 1) { rollRelPosNEDPresent = false; }
 	dualAntNoValueCount++;//increase watchdog
 }//UBX1+2 time don't fit
 }
@@ -879,7 +904,7 @@ void virtualAntennaPoint() {
 
 	if ((virtLatRad != 0.0) && (virtLonRad != 0)) {
 		//shift Antenna to the right
-		WayToRadius = GPSSet.virtAntRight / 637100080;//cm mean radius of earth WGS84 6.371.000,8m
+		WayToRadius = Set.virtAntLeft / 637100080;//cm mean radius of earth WGS84 6.371.000,8m
 		if (WayToRadius != 0.0)
 		{
 			double headingTemp = heading + 90;//move to right
@@ -890,7 +915,7 @@ void virtualAntennaPoint() {
 			optimizedPosPresent = true;
 		}
 		//shift Antenna foreward
-		WayToRadius = GPSSet.virtAntForew / 637100080;//cm mean radius of earth WGS84 6.371.000,8m
+		WayToRadius = Set.virtAntForew / 637100080;//cm mean radius of earth WGS84 6.371.000,8m
 		if (WayToRadius != 0.0) {
 			//move point x mm in heading direction
 			virtLatRadTemp = asin((sin(virtLatRad) * cos(WayToRadius)) + (cos(virtLatRad) * sin(WayToRadius) * cos(heading)));
