@@ -126,15 +126,18 @@ void EthhandleNotFound() {
 
 //-------------------------------------------------------------------------------------------------
 //7. Maerz 2021
+// Mrz 23: main loop delay
 
 void doWebinterface(void* pvParameters) {
     for (;;) {
         WiFi_Server.handleClient(); //does the Webinterface
         if (WebIOLastUsePlus3 < millis()) {//not called in the last 3 sec
             //Serial.println("Webinterface no client for 3 sec");
+            bitClear(mainLoopDelay, 2);
             vTaskDelay(1000);
         }
         else {
+            bitSet(mainLoopDelay, 2);//delay main loop for 4 ms to have time for WebIO
             vTaskDelay(20);
         }
         if ((now > WebIOTimeOut) && (Set.timeoutWebIO != 255)) {
@@ -150,6 +153,7 @@ void doWebinterface(void* pvParameters) {
 
 //-------------------------------------------------------------------------------------------------
 //7. Maerz 2021
+// Mrz 2023 WebbIOlastUse
 
 void handleRoot() {
     make_HTML01();
@@ -167,23 +171,26 @@ void handleRoot() {
 
 //-------------------------------------------------------------------------------------------------
 //10. Mai 2020
+// Mrz 2023 OTA changed
 
 void WiFiStartServer() {
 
     WiFi_Server.on("/", HTTP_GET, []() {handleRoot(); });
-
     //file selection for firmware update
     WiFi_Server.on("/serverIndex", HTTP_GET, []() {
         WiFi_Server.sendHeader("Connection", "close");
         WiFi_Server.send(200, "text/html", serverIndex);
         });
-
-            //handling uploading firmware file //
-    WiFi_Server.on("/update", HTTP_POST, []() {
+    //handling uploading firmware file 
+    WiFi_Server.on("/update", HTTP_POST, [&]() {
+        Serial1.end(); //close serials to be sure, that F9P config is not mixed up
+        delay(50);
+        Serial2.end();
+        delay(50);
         WiFi_Server.sendHeader("Connection", "close");
         WiFi_Server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
         ESP.restart();
-        }, []() {
+        }, [&]() {
             HTTPUpload& upload = WiFi_Server.upload();
             if (upload.status == UPLOAD_FILE_START) {
                 Serial.printf("Update: %s\n", upload.filename.c_str());
@@ -192,7 +199,7 @@ void WiFiStartServer() {
                 }
             }
             else if (upload.status == UPLOAD_FILE_WRITE) {
-                // flashing firmware to ESP//
+                /* flashing firmware to ESP*/
                 if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
                     Update.printError(Serial);
                 }
@@ -206,7 +213,6 @@ void WiFiStartServer() {
                 }
             }
         });
-
     WiFi_Server.onNotFound(handleNotFound);
 
     WiFi_Server.begin();
@@ -302,7 +308,7 @@ void process_Request()
         }
         if (WiFi_Server.argName(n) == "timeoutRout") {
             temLong = WiFi_Server.arg(n).toInt();
-            if ((temLong >= 20) && (temLong <= 1000)) { Set.timeoutRouter = int(temLong); }
+            if ((temLong >= 20) && (temLong <= 1000)) { Set.timeoutRouterWiFi = int(temLong); }
         }
         if (WiFi_Server.argName(n) == "timeoutWebIO") {
             temLong = WiFi_Server.arg(n).toInt();
@@ -328,7 +334,10 @@ void process_Request()
             temInt = WiFi_Server.arg(n).toInt();
             Set.WiFi_ipDest_ending = byte(temInt);
         }
-
+        if (WiFi_Server.argName(n) == "timeoutRoutEth") {
+            temLong = WiFi_Server.arg(n).toInt();
+            if ((temLong >= 20) && (temLong <= 1000)) { Set.timeoutRouterEth = int(temLong); }
+        }
         if (WiFi_Server.argName(n) == "EthIP0") {
             temInt = WiFi_Server.arg(n).toInt();
             Set.Eth_myip[0] = byte(temInt);
@@ -791,7 +800,7 @@ void make_HTML01() {
     strcati(HTML_String, vers_nr);
     strcat(HTML_String, VersionTXT);
     strcat(HTML_String, "<br><hr>");
-
+ 
     //---------------------------------------------------------------------------------------------  
     //load values of INO setup zone
     strcat(HTML_String, "<h2>Load default values of INO setup zone</h2>");
@@ -888,7 +897,7 @@ void make_HTML01() {
     strcat(HTML_String, "<td colspan=\"3\">time, trying to connect to networks from list above</td></tr>");
     strcat(HTML_String, "<td colspan=\"3\">after time has passed, access point is opened (SSID and password below</td></tr>");
     strcat(HTML_String, "<tr><td><b>Timeout (s):</b></td><td><input type = \"number\" onchange=\"sendVal('/?timeoutRout='+this.value)\" name = \"timeoutRout\" min = \"20\" max = \"1000\" step = \"1\" style= \"width:200px\" value = \"");// placeholder = \"");
-    strcati(HTML_String, Set.timeoutRouter);
+    strcati(HTML_String, Set.timeoutRouterWiFi);
     strcat(HTML_String, "\"></td>");
     strcat(HTML_String, "</tr>");
 
@@ -1186,10 +1195,20 @@ void make_HTML01() {
     strcat(HTML_String, "\"></td>");
     strcat(HTML_String, "<td><input type = \"number\"  onchange=\"sendVal('/?EthMac5='+this.value)\" name = \"EthMac\" min = \"0\" max = \"255\" step = \"1\" style= \"width:40px\" value = \"");
     strcati(HTML_String, Set.Eth_mac[5]);
-    strcat(HTML_String, "\"></td></table>");
+    strcat(HTML_String, "\"></td>");
 
+    strcat(HTML_String, "<tr> <td colspan=\"3\">&nbsp;</td> </tr>");
 
-    strcat(HTML_String, "</form><br><hr>");
+    strcat(HTML_String, "<tr><td colspan=\"3\"><b>Ethernet connection timeout</b></td></tr>");
+    strcat(HTML_String, "<tr><td colspan=\"3\">time, trying to connect via cable Ethernet</td></tr>");
+    strcat(HTML_String, "<tr><td colspan=\"3\">after time has passed, data transfer is changed to WiFi</td></tr>");
+    strcat(HTML_String, "<tr><td colspan=\"3\">255 = try until connection is there</td></tr>");
+    strcat(HTML_String, "<tr><td><b>Timeout (s):</b></td><td><input type = \"number\" onchange=\"sendVal('/?timeoutRoutEth='+this.value)\" name = \"timeoutRoutEth\" min = \"20\" max = \"1000\" step = \"1\" style= \"width:200px\" value = \"");// placeholder = \"");
+    strcati(HTML_String, Set.timeoutRouterEth);
+    strcat(HTML_String, "\"></td>");
+    strcat(HTML_String, "</tr>");
+
+    strcat(HTML_String, "</table></form><br><hr>");
   
     //---------------------------------------------------------------------------------------------
     // IMU setup

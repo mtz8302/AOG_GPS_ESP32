@@ -3,7 +3,6 @@ void init_BNO_serial() {
     Serial2.begin(115200, SERIAL_8N1, Set.RX2, Set.TX2);// This is the baud rate specified by the datasheet
     while (!Serial2)
         delay(10);
-
     if (!rvc.begin(&Serial2)) { // connect to the sensor over hardware serial
         Serial.println("Could not find BNO08x in RVC mode at serial pins"); Serial.println();
         Set.IMUType = 0;
@@ -47,8 +46,6 @@ void readBNO() {
     else {
         IMUnoData++;
     }
-    IMUnextReadTime = millis() + IMUBNOreadTime;
-
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -79,9 +76,6 @@ void init_CMPS14() {
             }
             Serial.print("CMPS14 Ok. Started at I2C adress (hex): ");
             Serial.println(Set.CMPS14_ADDRESS, HEX);
-
-            xTaskCreate(do_CMPS_traffic, "Core1CMPSHandle", 3072, NULL, 1, &taskHandle_CMPS14);
-            delay(500);
         }
         else
         {
@@ -95,24 +89,6 @@ void init_CMPS14() {
     Serial.println();
 }
 
-
-void do_CMPS_traffic(void* pvParameters) {
-    Serial.println("started new task on core 0: CMPS read 20 Hz");
-    for (;;) { // MAIN LOOP
-        if (Set.IMUType == 2) {
-            task_CMPS_reader_running = true;
-            readCMPS();
-            vTaskDelay(49);
-        }//2
-        
-        else {
-            task_CMPS_reader_running = false;
-            delay(1);
-            vTaskDelete(NULL);
-            delay(1);
-        }
-    }
-}
 
 void readCMPS() {
     //Data is stored to ring buffer
@@ -142,10 +118,30 @@ void readCMPS() {
     IMUPitch[nextIMUDataRingCount] = Wire.read();
 
     IMUDataRingCount = nextIMUDataRingCount;
-    //IMUnextReadTime = millis() + IMUCMPSreadTime;//read every 50ms
 }
 
 //-------------------------------------------------------------------------------------------------
+
+/*
+void do_CMPS_traffic(void* pvParameters) {
+    Serial.println("started new task on core 0: CMPS read 20 Hz");
+    for (;;) { // MAIN LOOP
+        if (Set.IMUType == 2) {
+            task_CMPS_reader_running = true;
+            readCMPS();
+            vTaskDelay(49);
+        }//2
+
+        else {
+            task_CMPS_reader_running = false;
+            delay(1);
+            vTaskDelete(NULL);
+            delay(1);
+        }
+    }
+}
+*/
+
 /*
 void init_CMPS_serial() {
     Serial.println();

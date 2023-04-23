@@ -2,17 +2,19 @@
 // Feb 23: added bridge Ehternet - WiFi and Hello Message
 
 void WiFi_handle_connection(void* pvParameters) {
+    task_WiFiConnectRunning = true;
     if (Set.DataTransVia >= 10) { vTaskDelay(5000); } //start Ethernet first, if needed for data transfer
     for (;;) {
         if (WiFi_connect_step == 0) {
             if (Set.debugmode) { Serial.println("closing WiFi connection task"); Serial.println(); }
             task_WiFiConnectRunning = false;
+            if (!task_EthConnectRunning) bitClear(mainLoopDelay, 1);
             delay(1);
             vTaskDelete(NULL);
             delay(1);
         }
-        else {
-            task_WiFiConnectRunning = true;
+        else {            
+            bitSet(mainLoopDelay, 1);
 
             vTaskDelay(800);//do every 0.8 second
 
@@ -64,7 +66,7 @@ void WiFi_handle_connection(void* pvParameters) {
                 WiFiUDPRunning = false;
                 WiFi_STA_connect_call_nr = 0;
                 if (WiFi_network_search_timeout == 0) {   //first run                 
-                    WiFi_network_search_timeout = now + (Set.timeoutRouter * 1000);
+                    WiFi_network_search_timeout = now + (Set.timeoutRouterWiFi * 1000);
                 }
                 WiFi_scan_networks();
                 //timeout?
@@ -84,7 +86,7 @@ void WiFi_handle_connection(void* pvParameters) {
                 break;
             case 12:
                 if (WiFi_network_search_timeout == 0) {   //first run  
-                    WiFi_network_search_timeout = now + (Set.timeoutRouter * 500);//half time
+                    WiFi_network_search_timeout = now + (Set.timeoutRouterWiFi * 500);//half time
                 }
                 WiFi_STA_connect_network();
                 WiFi_connect_step++;
@@ -96,7 +98,7 @@ void WiFi_handle_connection(void* pvParameters) {
                         //timeout
                         WiFi_STA_connect_call_nr++;
                         WiFi_connect_step = 17;//close WiFi and try again
-                        WiFi_network_search_timeout += (Set.timeoutRouter * 500);//add rest of time
+                        WiFi_network_search_timeout += (Set.timeoutRouterWiFi * 500);//add rest of time
                     }
                 }
                 else {
@@ -178,29 +180,17 @@ void WiFi_handle_connection(void* pvParameters) {
                 // UDP message from AgIO packet handling: heartbeat
                 WiFiUDPFromAOG.onPacket([](AsyncUDPPacket packet)
                     {
-
-                        if ((packet.data()[0] == AgIO_msgHeader[0]) && (packet.data()[1] == AgIO_msgHeader[1]) &&
-                            (packet.data()[2] == AgIO_msgHeader[2])) {
-                            if ((Set.IMUType > 0) && (packet.data()[3] == AgIO_heartbeat) && (Set.AgIOHeartbeat_answer == 1))
-                            {//AgIO heartbeat                      
-                                WiFiUDPToAOG.writeTo(helloFromIMU, sizeof(helloFromIMU), WiFi_ipDestination, Set.PortDestination);
-                            }
-                            else {
-                                if (packet.data()[3] == AgIO_ScanRequest) {
-                                    //IP scan request
-                                    uint8_t scanReply[] = { 128, 129, 120, 203, 7,
-                                        WiFi.localIP()[0], WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3],0,0,0, 23 };
-                                    //checksum
-                                    int16_t CK_A = 0;
-                                    for (uint8_t i = 2; i < sizeof(scanReply) - 1; i++)
-                                    {
-                                        CK_A = (CK_A + scanReply[i]);
-                                    }
-                                    scanReply[sizeof(scanReply) - 1] = CK_A;
-                                    WiFiUDPToAOG.writeTo(scanReply, sizeof(scanReply), WiFi_ipDestination, Set.PortDestination);
-
-                                    if (Set.IMUType > 0) {
-                                        uint8_t scanReply[] = { 128, 129, 121, 203, 7,
+                        if (!Set.DataTransVia == 10) {//no AgIO heartbeat or scan reply in Ethernet mode (reply via Ethernet)
+                            if ((packet.data()[0] == AgIO_msgHeader[0]) && (packet.data()[1] == AgIO_msgHeader[1]) &&
+                                (packet.data()[2] == AgIO_msgHeader[2])) {
+                                if ((Set.IMUType > 0) && (packet.data()[3] == AgIO_heartbeat) && (Set.AgIOHeartbeat_answer == 1))
+                                {//AgIO heartbeat                      
+                                    WiFiUDPToAOG.writeTo(helloFromIMU, sizeof(helloFromIMU), WiFi_ipDestination, Set.PortDestination);
+                                }
+                                else {
+                                    if (packet.data()[3] == AgIO_ScanRequest) {
+                                        //IP scan request
+                                        uint8_t scanReply[] = { 128, 129, 120, 203, 7,
                                             WiFi.localIP()[0], WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3],0,0,0, 23 };
                                         //checksum
                                         int16_t CK_A = 0;
@@ -210,6 +200,19 @@ void WiFi_handle_connection(void* pvParameters) {
                                         }
                                         scanReply[sizeof(scanReply) - 1] = CK_A;
                                         WiFiUDPToAOG.writeTo(scanReply, sizeof(scanReply), WiFi_ipDestination, Set.PortDestination);
+
+                                        if (Set.IMUType > 0) {
+                                            uint8_t scanReply[] = { 128, 129, 121, 203, 7,
+                                                WiFi.localIP()[0], WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3],0,0,0, 23 };
+                                            //checksum
+                                            int16_t CK_A = 0;
+                                            for (uint8_t i = 2; i < sizeof(scanReply) - 1; i++)
+                                            {
+                                                CK_A = (CK_A + scanReply[i]);
+                                            }
+                                            scanReply[sizeof(scanReply) - 1] = CK_A;
+                                            WiFiUDPToAOG.writeTo(scanReply, sizeof(scanReply), WiFi_ipDestination, Set.PortDestination);
+                                        }
                                     }
                                 }
                             }
@@ -224,35 +227,8 @@ void WiFi_handle_connection(void* pvParameters) {
                     }
                 }
                 WiFiUDPRunning = true;
+                Set.WiFi_AOG_data_bridge = false;//only usefull in access point mode
                 break;
-
-                /*          case 23://init WiFi UDP listening to Autosteer
-                              if (WiFiUDPBridgeToAOG.listen(Set.PortFromASt)) {
-                                  Serial.print("UDP listening to AutoSteer port: ");
-                                  Serial.println(Set.PortFromASt);
-                              }
-                              WiFi_connect_step++;
-                              break;
-
-                          case 24:
-                              // UDP message from AgIO packet handling: AutoSteer
-                              WiFiUDPBridgeToAOG.onPacket([](AsyncUDPPacket packet)
-                                  {
-                                      if (Eth_connect_step == 0) {
-                                          Eth_udpRoof.beginPacket(Eth_ipDestination, Set.PortDestination);
-                                          Eth_udpRoof.write(packet.data(), packet.length());
-                                          Eth_udpRoof.endPacket();
-                                      }
-                                  });  // end of onPacket call
-                              if (Set.NtripClientBy == 0) { WiFi_connect_step = 100; }
-                              else {
-                                  if (Set.NtripClientBy == 2) { WiFi_connect_step = 40; }
-                                  else {
-                                      if ((Set.DataTransVia > 5) && (Set.DataTransVia < 10)) { WiFi_connect_step = 30; }
-                                      else { WiFi_connect_step = 100; }
-                                  }
-                              }
-                              break;*/
 
             case 30:
                 //init WiFi UPD listening to AOG 
@@ -580,7 +556,7 @@ void WiFi_Start_AP() {
     delay(350);
     IPAddress myIP = WiFi.softAPIP();
     delay(300);
-    Serial.print("Accesspoint started - Name : ");
+    Serial.print("Access point started - Name : ");
     Serial.println(Set.ssid_ap);
     Serial.print("Password: ");
     Serial.println(Set.password_ap);
@@ -594,10 +570,11 @@ void WiFi_Start_AP() {
 
 //=================================================================================================
 //Ethernet handling for ESP32 19. Feb 2023
-// Feb 23: 
+// Apr 23: Router timeout added, main Loop delay
 //-------------------------------------------------------------------------------------------------
 void Eth_handle_connection(void* pvParameters) {
-    if (Set.timeoutRouter < 20) { if (WiFi_connect_step != 0) { vTaskDelay(25000); } }//waiting for WiFi to start first
+    task_EthConnectRunning = true;
+    if (Set.timeoutRouterWiFi < 20) { if (WiFi_connect_step != 0) { vTaskDelay(25000); } }//waiting for WiFi to start first
     if (Set.debugmode) { Serial.println("started new task: Ethernet handle connection"); }
     for (;;) { // MAIN LOOP
 
@@ -605,13 +582,15 @@ void Eth_handle_connection(void* pvParameters) {
 
         if ((Eth_connect_step > 240) || (Eth_connect_step == 0)) {
             Serial.println("closing Ethernet connection task"); Serial.println();
+            task_EthConnectRunning = false;
+            if (!task_WiFiConnectRunning) bitClear(mainLoopDelay, 1);
             delay(1);
             vTaskDelete(NULL);
             delay(1);
         }
 
-        else {
-
+        else {            
+            bitSet(mainLoopDelay, 1);
             if (Set.debugmode) { Serial.print("Ethernet connection step: "); Serial.println(Eth_connect_step); }
 
             switch (Eth_connect_step) {
@@ -636,16 +615,6 @@ void Eth_handle_connection(void* pvParameters) {
                     if (Set.DataTransVia == 10) {
                         Set.DataTransVia = 7; //change DataTransfer to WiFi 
                         vTaskDelay(5);//make other tasks seeing change in DataTransVia
-                       // if (task_Eth_NTRIP_running) { vTaskDelete(taskHandle_Eth_NTRIP); delay(5); task_Eth_NTRIP_running = false; }
-
-                        if ((Set.NtripClientBy == 1) && (!WiFiUDPRunning)) {
-                            if (WiFi_connect_step >= 20) { WiFi_connect_step = 4; }
-                            else { WiFi_connect_step = 10; }
-                            if (!task_WiFiConnectRunning) {                            //start WiFi
-                                xTaskCreate(WiFi_handle_connection, "WiFiConnectHandle", 3072, NULL, 1, &taskHandle_WiFi_connect);
-                                delay(500);
-                            }
-                        }//start WiFi if not running
                     }
                 }
                 else {
@@ -657,8 +626,14 @@ void Eth_handle_connection(void* pvParameters) {
             case 13:
                 if (Ethernet.linkStatus() != LinkON) {
                     Serial.println("Ethernet cable is not connected. Retrying in 5 Sek.");
+                    now = millis();
+                    if (Eth_network_search_timeout == 0) { Eth_network_search_timeout = now + (Set.timeoutRouterEth * 1000); }                   
+                    if ((Set.timeoutRouterEth != 255) && (Eth_network_search_timeout < now)) {
+                        Set.DataTransVia = 7;
+                        Serial.print("no Ethernet connection for "); Serial.print(Set.timeoutRouterEth); Serial.println("s, data transfer now via WiFi");
+                        Eth_connect_step = 255;//no Ethernet, end Ethernet
+                    }
                     vTaskDelay(5000);
-                   //Serial.println("after 5 Sek.");
                 }
                 else { Serial.println("Ethernet status OK"); Eth_connect_step++; }
                 break;
@@ -772,8 +747,8 @@ void Eth_handle_connection(void* pvParameters) {
 void WiFi_Start_STA_old_code() {
     unsigned long timeout, timeout2;
     now = millis();
-    timeout = now + (Set.timeoutRouter * 1000);
-    timeout2 = timeout - (Set.timeoutRouter * 500);
+    timeout = now + (Set.timeoutRouterWiFi * 1000);
+    timeout2 = timeout - (Set.timeoutRouterWiFi * 500);
     Serial.println("retrying to connect to WiFi network with other code");
     while (millis() < timeout) {
         //scanning for known networks in reach, MUST be done first, to get network #
@@ -795,8 +770,8 @@ void WiFi_Start_STA_old_code() {
     }
     WiFi.config(0U, 0U, 0U);  //set IP to DHCP call immediately after begin!
     delay(300);
-    timeout = millis() + (Set.timeoutRouter * 1000);
-    timeout2 = timeout - (Set.timeoutRouter * 500);
+    timeout = millis() + (Set.timeoutRouterWiFi * 1000);
+    timeout2 = timeout - (Set.timeoutRouterWiFi * 500);
     while (WiFi.status() != WL_CONNECTED && millis() < timeout) {
         delay(300);
         Serial.print(".");

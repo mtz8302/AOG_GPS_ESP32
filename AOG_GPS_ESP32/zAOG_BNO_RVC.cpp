@@ -45,7 +45,7 @@ bool BNO_rvc::read(BNO_rvcData* bnoData) {
     if (sum != buffer[16]) return false;
 
     //clean out any remaining bytes in case teensy was busy
-    //while (serial_dev->available() > 0) serial_dev->read();
+   while (serial_dev->available() > 0) serial_dev->read();
 
     int16_t temp;
 

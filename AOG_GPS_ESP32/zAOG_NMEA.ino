@@ -122,11 +122,12 @@ void BuildPANDA(void)
 
 	//taking the IMU data that fits	
 	byte fitIMUDataRingCount;
-	if (IMUnoData >= IMUDataTimeShift) {fitIMUDataRingCount = IMUDataRingCount; }//reading IMU fails often, so take newest data
+	if (IMUnoData >= IMUDataTimeShift) { fitIMUDataRingCount = IMUDataRingCount; }//reading IMU fails often, so take newest data
 	else { fitIMUDataRingCount = (IMUDataRingCount + IMUDataTimeShift + IMUnoData) % 10; } //IMU time shift: GPS data is about 100ms old, so use older IMU data to be syncron
 
 	if (Set.IMUType == 1) { IMUDataTimeShift = IMUDataTimeShiftBNO; }
 	else if (Set.IMUType == 2) { IMUDataTimeShift = IMUDataTimeShiftCMPS; }
+
 	IMUnoData = 0;
 
 	//12
