@@ -9,7 +9,7 @@ you can use WiFi connection, cable Ethernet or USB
 sends $PANDA or $GGA, $VTG and IMU PGN to AgOpenGPS
  
 you can change the settings via webinterface: x.x.x.79
-when access to your network fails, an accesspoint is created. Webinterface: 192.168.1.1
+when access to your network fails, an accesspoint is created. Webinterface: 192.168.137.1
 
 
 Config via UCenter:
